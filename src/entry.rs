@@ -37,12 +37,15 @@ pub enum Kind {
   Error,
 }
 
+const KIND_WARNING: &str = "warning";
+const KIND_ERROR: &str = "error";
+
 impl Kind {
   pub fn from(value: &str) -> Self {
     match value {
-      "warning" => Kind::Warning,
-      "error" => Kind::Error,
-      value => panic!(format!("unexpected kind: {}", value)),
+      KIND_WARNING => Kind::Warning,
+      KIND_ERROR => Kind::Error,
+      value => panic!("unexpected kind: {}", value),
     }
   }
 }
@@ -50,8 +53,8 @@ impl Kind {
 impl fmt::Display for Kind {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      Kind::Warning => write!(f, "warning"),
-      Kind::Error => write!(f, "error"),
+      Kind::Warning => write!(f, "{}", KIND_WARNING),
+      Kind::Error => write!(f, "{}", KIND_ERROR),
     }
   }
 }
