@@ -1,7 +1,7 @@
 use regex::Regex;
 use std::fmt;
 
-pub fn run(input: String, errfmt: String) -> Result<String, ()> {
+pub fn run(input: String, errfmt: String) -> Result<String, String> {
   Ok(
     Parser::new(errfmt)
       .parse(input)
