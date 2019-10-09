@@ -1,1 +1,1 @@
-/tmp/test.py:1:1:  error:  invalid syntax (<unknown>, line 1)
+/tmp/test.py:1:1: error:  invalid syntax (<unknown>, line 1)

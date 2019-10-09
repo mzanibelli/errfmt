@@ -18,8 +18,15 @@ fn check_snapshot((input, errfmt, expected): (String, String, String)) -> () {
 
 fn read_snapshot(name: &str) -> (String, String, String) {
   (
-    fs::read_to_string(format!("./snapshots/{}/input", name)).unwrap(),
-    fs::read_to_string(format!("./snapshots/{}/errfmt", name)).unwrap(),
-    fs::read_to_string(format!("./snapshots/{}/expected", name)).unwrap(),
+    read_file(format!("./snapshots/{}/input", name)),
+    read_file(format!("./snapshots/{}/errfmt", name)),
+    read_file(format!("./snapshots/{}/expected", name)),
   )
+}
+
+fn read_file(name: String) -> String {
+  fs::read_to_string(name)
+    .unwrap()
+    .trim_end_matches('\n')
+    .to_string()
 }

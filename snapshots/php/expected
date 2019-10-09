@@ -1,1 +1,1 @@
-/tmp/test.php:4:1: error: syntax error, unexpected end of file, expecting ',' or ';'
+/tmp/test.php:4:1: error:  syntax error, unexpected end of file, expecting ',' or ';'

@@ -2,8 +2,14 @@ use regex::Regex;
 use std::fmt;
 
 pub fn run(input: String, errfmt: String) -> Result<String, ()> {
-  let entries = Parser::new(errfmt).parse(input);
-  Ok(format!("{:?}", entries))
+  Ok(
+    Parser::new(errfmt)
+      .parse(input)
+      .iter()
+      .map(|entry| entry.to_string())
+      .collect::<Vec<String>>()
+      .join("\n"),
+  )
 }
 
 #[derive(Debug, Clone)]
@@ -41,19 +47,6 @@ impl Token {
 
   fn is_known(val: &str) -> bool {
     Regex::new(r"^%[flckm]$").unwrap().is_match(val)
-  }
-}
-
-impl fmt::Display for Token {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    match &self {
-      Token::File => write!(f, "%f"),
-      Token::Line => write!(f, "%l"),
-      Token::Column => write!(f, "%c"),
-      Token::Kind => write!(f, "%k"),
-      Token::Message => write!(f, "%m"),
-      Token::Literal(value) => write!(f, "{}", value),
-    }
   }
 }
 
@@ -96,25 +89,28 @@ impl Parser {
     let pattern = Regex::new(&self.errfmt.pattern()).unwrap();
     input.lines().fold(Vec::new(), |mut acc, line| {
       if let Some(matches) = pattern.captures(&line) {
-        acc.push(Entry {
-          file: string_match(&matches, 1),
-          line: u32_match(&matches, 2),
-          column: u32_match(&matches, 3),
-          kind: string_match(&matches, 4),
-          message: string_match(&matches, 5),
-        })
+        acc.push(self.build_entry(&matches))
       }
       acc
     })
   }
-}
 
-fn string_match(matches: &regex::Captures, i: usize) -> String {
-  matches.get(i).unwrap().as_str().to_string()
-}
-
-fn u32_match(matches: &regex::Captures, i: usize) -> u32 {
-  string_match(matches, i).parse::<u32>().unwrap()
+  fn build_entry(&self, matches: &regex::Captures) -> Entry {
+    let mut entry = Entry::new();
+    let mut n = 1;
+    for token in &self.errfmt.0 {
+      match token {
+        Token::File => entry.file = string_match(matches, n),
+        Token::Kind => entry.kind = Kind::from(&string_match(matches, n)),
+        Token::Message => entry.message = string_match(matches, n),
+        Token::Line => entry.line = u32_match(matches, n),
+        Token::Column => entry.column = u32_match(matches, n),
+        Token::Literal(_) => n -= 1,
+      };
+      n += 1;
+    }
+    entry
+  }
 }
 
 fn tokenize_errfmt(errfmt: String) -> Vec<String> {
@@ -130,6 +126,14 @@ fn tokenize_errfmt(errfmt: String) -> Vec<String> {
   })
 }
 
+fn string_match(matches: &regex::Captures, i: usize) -> String {
+  matches.get(i).unwrap().as_str().to_string()
+}
+
+fn u32_match(matches: &regex::Captures, i: usize) -> u32 {
+  string_match(matches, i).parse::<u32>().unwrap()
+}
+
 fn should_split(acc: &[String], c: char) -> bool {
   acc.len() == 0 || c == '%' || Token::is_known(acc.last().unwrap())
 }
@@ -139,8 +143,55 @@ struct Entry {
   file: String,
   line: u32,
   column: u32,
-  kind: String,
+  kind: Kind,
   message: String,
+}
+
+impl Entry {
+  fn new() -> Self {
+    Entry {
+      file: String::new(),
+      line: 1,
+      column: 1,
+      kind: Kind::Error,
+      message: String::new(),
+    }
+  }
+}
+
+impl fmt::Display for Entry {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(
+      f,
+      "{}:{}:{}: {}: {}",
+      self.file, self.line, self.column, self.kind, self.message
+    )
+  }
+}
+
+#[derive(Debug)]
+enum Kind {
+  Warning,
+  Error,
+}
+
+impl Kind {
+  fn from(value: &str) -> Self {
+    match value {
+      "warning" => Kind::Warning,
+      "error" => Kind::Error,
+      value => panic!(format!("unexpected kind: {}", value)),
+    }
+  }
+}
+
+impl fmt::Display for Kind {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match self {
+      Kind::Warning => write!(f, "warning"),
+      Kind::Error => write!(f, "error"),
+    }
+  }
 }
 
 #[cfg(test)]
@@ -206,7 +257,7 @@ mod tests {
   fn test_parser_entry_kind() {
     let sut = Parser::new(String::from("Error: %f:%l:%c: %k: %m"));
     let entries = sut.parse(String::from("Error: /tmp/foo:42:42: warning: syntax error"));
-    assert_eq!("warning", &entries[0].kind)
+    assert_eq!(Kind::Warning.to_string(), entries[0].kind.to_string())
   }
 
   #[test]
@@ -214,5 +265,12 @@ mod tests {
     let sut = Parser::new(String::from("Error: %f:%l:%c: %k: %m"));
     let entries = sut.parse(String::from("Error: /tmp/foo:42:42: warning: syntax error"));
     assert_eq!("syntax error", &entries[0].message)
+  }
+
+  #[test]
+  fn test_parser_should_keep_matching_groups_only() {
+    let sut = Parser::new(String::from("PHP Parse error: %m in %f on line %l"));
+    let entries = sut.parse(String::from("PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 4"));
+    assert_eq!(1, entries.len())
   }
 }
