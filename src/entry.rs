@@ -58,3 +58,28 @@ impl fmt::Display for Kind {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_default_entry_values() {
+    let expected = String::from(":1:1: error: ");
+    let actual = Entry::new().to_string();
+    assert_eq!(expected, actual)
+  }
+
+  #[test]
+  fn test_arbitrary_entry_values() {
+    let expected = String::from("/tmp/foo:2:3: warning: syntax error");
+    let mut sut = Entry::new();
+    sut.file = String::from("/tmp/foo");
+    sut.line = 2;
+    sut.column = 3;
+    sut.kind = Kind::Warning;
+    sut.message = String::from("syntax error");
+    let actual = sut.to_string();
+    assert_eq!(expected, actual)
+  }
+}
