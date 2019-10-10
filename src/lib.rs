@@ -59,12 +59,12 @@ impl Parser {
 }
 
 fn mutate_entry(entry: &mut Entry, token: &Token, matches: &Captures, n: usize) -> usize {
-  let parse_string = || matches.get(n).unwrap().as_str().to_string();
-  let parse_u32 = || matches.get(n).unwrap().as_str().parse::<u32>().unwrap();
+  let parse_str = || matches.get(n).unwrap().as_str();
+  let parse_u32 = || parse_str().parse::<u32>().unwrap();
   match token {
-    Token::File => entry.file = parse_string(),
-    Token::Kind => entry.kind = Kind::from(&parse_string()),
-    Token::Message => entry.message = parse_string(),
+    Token::File => entry.file = String::from(parse_str()),
+    Token::Kind => entry.kind = Kind::from(parse_str()),
+    Token::Message => entry.message = String::from(parse_str()),
     Token::Line => entry.line = parse_u32(),
     Token::Column => entry.column = parse_u32(),
     Token::Literal(_) => return n,
