@@ -67,7 +67,7 @@ fn mutate_entry(entry: &mut Entry, token: &Token, matches: &Captures, n: usize) 
     Token::Message => entry.message = String::from(parse_str()),
     Token::Line => entry.line = parse_u32(),
     Token::Column => entry.column = parse_u32(),
-    Token::Literal(_) => return n,
+    Token::Literal(_) => return n, // do not consume next match
   };
   n + 1
 }

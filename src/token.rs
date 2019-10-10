@@ -27,12 +27,12 @@ impl Token {
       "%l" => Self::Line,
       "%c" => Self::Column,
       "%k" => Self::Kind,
-      value => Self::Literal(dedupe_percent_sign(value)),
+      value => Self::Literal(dedupe_percent_signs(value)),
     }
   }
 }
 
-fn dedupe_percent_sign(value: &str) -> String {
+fn dedupe_percent_signs(value: &str) -> String {
   if value == "%%" {
     String::from("%")
   } else {
@@ -154,7 +154,7 @@ mod tests {
   }
 
   #[test]
-  fn test_from_dedupes_percents_signs() {
+  fn test_from_dedupes_percent_signs() {
     if let Token::Literal(actual) = Token::from("%%") {
       assert_eq!(String::from("%"), actual)
     } else {
