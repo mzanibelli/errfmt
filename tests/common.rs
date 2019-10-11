@@ -1,18 +1,6 @@
-extern crate errfmt;
-
 use std::fs;
 
-#[test]
-fn test_passthrough_snapshot() {
-  run_snapshot("passthrough");
-}
-
-#[test]
-fn test_php_snapshot() {
-  run_snapshot("php");
-}
-
-fn run_snapshot(name: &str) -> () {
+pub fn run_snapshot(name: &str) -> () {
   check_snapshot(read_snapshot(name));
 }
 
