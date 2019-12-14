@@ -4,22 +4,30 @@ pub enum Token {
   Line,
   Column,
   Kind,
+  NewLine,
   Message,
   Literal(String),
 }
 
+/// A Token is a section of input data. It can be referred to using
+/// pre-defined placeholders that compose an errorformat string.
 impl Token {
+  /// Regexes that will be involved in extracting text data from
+  /// the input stream.
   pub fn pattern(&self) -> String {
     match &self {
-      Self::File => String::from(r"(.+)"),
+      Self::File => String::from(r"([^\n]+)"),
       Self::Line => String::from(r"(\d+)"),
       Self::Column => String::from(r"(\d+)"),
       Self::Kind => String::from(r"\b(warning|error)\b"),
-      Self::Message => String::from(r"(.+)"),
+      Self::NewLine => String::from(r"\n"),
+      Self::Message => String::from(r"([^\n]+)"),
       Self::Literal(value) => String::from(value),
     }
   }
 
+  /// Human-readable way of representing an expected sequence of
+  /// tokens. Acts as a DSL for defining the errorformat string.
   pub fn from(value: &str) -> Self {
     match value {
       "%f" => Self::File,
@@ -27,11 +35,14 @@ impl Token {
       "%l" => Self::Line,
       "%c" => Self::Column,
       "%k" => Self::Kind,
+      "%." => Self::NewLine,
       value => Self::Literal(dedupe_percent_signs(value)),
     }
   }
 }
 
+/// The percent sign is used as a placeholder prefix. As a result,
+/// it is necessary to escape it.
 fn dedupe_percent_signs(value: &str) -> String {
   if value == "%%" {
     String::from("%")
@@ -40,6 +51,8 @@ fn dedupe_percent_signs(value: &str) -> String {
   }
 }
 
+/// Once the errorformat string is read and understood, this structure
+/// represents a sequence of tokens: the shape of an error message.
 #[derive(Debug)]
 pub struct ErrFmt(pub Vec<Token>);
 
@@ -52,8 +65,10 @@ impl ErrFmt {
     Self([self.0.to_vec(), vec![token]].concat())
   }
 
+  /// Final pattern is made multi-line and wrapped in a capture
+  /// group.
   pub fn pattern(&self) -> String {
-    format!("^{}$", self.serialize().join(""))
+    format!("(?m:^{}$)", self.serialize().join(""))
   }
 
   fn serialize(&self) -> Vec<String> {
@@ -114,6 +129,11 @@ mod tests {
   }
 
   #[test]
+  fn test_newline_kind_pattern_match() {
+    assert!(token_matches(Token::NewLine, "\n"))
+  }
+
+  #[test]
   fn test_message_pattern_match() {
     assert!(token_matches(
       Token::Message,
@@ -147,9 +167,10 @@ mod tests {
       .push(Token::Literal(String::from(" ")))
       .push(Token::Kind)
       .push(Token::Literal(String::from(" ")))
+      .push(Token::NewLine)
       .push(Token::Message);
     let actual = sut.pattern();
-    let expected = r"^Error: (.+)(\d+)(\d+) \b(warning|error)\b (.+)$";
+    let expected = r"(?m:^Error: ([^\n]+)(\d+)(\d+) \b(warning|error)\b \n([^\n]+)$)";
     assert_eq!(expected, actual)
   }
 

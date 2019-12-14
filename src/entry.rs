@@ -9,6 +9,8 @@ pub struct Entry {
   pub message: String,
 }
 
+/// An Entry is a location (file, line) that is meant to be compatible
+/// with kakoune(1)'s definition.
 impl Entry {
   pub fn new() -> Self {
     Entry {
@@ -21,6 +23,8 @@ impl Entry {
   }
 }
 
+/// Must match kakoune's expected format. See lint.kak from standard
+/// rc scripts.
 impl fmt::Display for Entry {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     write!(
@@ -31,6 +35,7 @@ impl fmt::Display for Entry {
   }
 }
 
+/// Simple representation of the error's log-level.
 #[derive(Debug)]
 pub enum Kind {
   Warning,

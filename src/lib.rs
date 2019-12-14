@@ -29,7 +29,11 @@ struct Parser {
   errfmt: ErrFmt,
 }
 
+/// Parser is responsible for building a set of entries matching the
+/// extracted error messages.
 impl Parser {
+  /// Read the configuration (errorformat string) and compute the shape
+  /// of an error message.
   fn new(errfmt: String) -> Self {
     Parser {
       errfmt: errfmt::tokenize(errfmt)
@@ -38,19 +42,22 @@ impl Parser {
     }
   }
 
+  /// Return a list of extracted locations.
   fn parse(&self, input: String) -> Vec<Entry> {
     let pattern = Regex::new(&self.errfmt.pattern()).unwrap();
-    input.lines().fold(Vec::new(), |mut acc, line| {
-      if let Some(matches) = pattern.captures(&line) {
-        acc.push(self.build_entry(&matches))
-      }
-      acc
-    })
+    pattern
+      .captures_iter(&input)
+      .fold(Vec::new(), |mut acc, matches| {
+        acc.push(self.build_entry(&matches));
+        acc
+      })
   }
 
+  /// Add a new location to the result set by reading its data
+  /// from capture groups.
   fn build_entry(&self, matches: &regex::Captures) -> Entry {
     let mut entry = Entry::new();
-    let mut n = 1;
+    let mut n = 1; // skip the first capture group as it is the entire string
     for token in &self.errfmt.0 {
       n = mutate_entry(&mut entry, &token, &matches, n);
     }
@@ -58,6 +65,7 @@ impl Parser {
   }
 }
 
+/// Update a given entry according to the corresponding token.
 fn mutate_entry(entry: &mut Entry, token: &Token, matches: &Captures, n: usize) -> usize {
   let parse_str = || matches.get(n).unwrap().as_str();
   let parse_u32 = || parse_str().parse::<u32>().unwrap();
@@ -67,7 +75,7 @@ fn mutate_entry(entry: &mut Entry, token: &Token, matches: &Captures, n: usize) 
     Token::Message => entry.message = String::from(parse_str()),
     Token::Line => entry.line = parse_u32(),
     Token::Column => entry.column = parse_u32(),
-    Token::Literal(_) => return n, // do not consume next match
+    Token::NewLine | Token::Literal(_) => return n, // do not consume next match
   };
   n + 1
 }
@@ -98,12 +106,60 @@ mod tests {
   }
 
   #[test]
-  fn test_parser_entry_shape() {
+  fn test_single_line_mode() {
     let sut = Parser::new(String::from("PHP Parse error: %m in %f on line %l"));
     let entries = sut.parse(String::from("PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 4"));
     assert_eq!(
       "/tmp/test.php:4:1: error:  syntax error, unexpected end of file, expecting ',' or ';'",
       &entries[0].to_string()
+    )
+  }
+
+  #[test]
+  fn test_multiple_entries_with_single_line_mode() {
+    let sut = Parser::new(String::from("PHP Parse error: %m in %f on line %l"));
+    let entries = sut.parse(String::from(r"PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 1
+PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 2"));
+    assert_eq!(
+      "/tmp/test.php:2:1: error:  syntax error, unexpected end of file, expecting ',' or ';'",
+      &entries[1].to_string()
+    )
+  }
+
+  #[test]
+  fn test_multi_line_mode() {
+    let sut = Parser::new(String::from("%k: %m%.  --> %f:%l:%c"));
+    let entries = sut.parse(String::from(
+      r"error: unexpected close delimiter: `}`
+  --> /tmp/test.rs:85:1
+   |
+85 | }
+   | ^ unexpected close delimiter",
+    ));
+    assert_eq!(
+      "/tmp/test.rs:85:1: error: unexpected close delimiter: `}`",
+      &entries[0].to_string()
+    )
+  }
+
+  #[test]
+  fn test_multiples_entries_with_multi_line_mode() {
+    let sut = Parser::new(String::from("%k: %m%.  --> %f:%l:%c"));
+    let entries = sut.parse(String::from(
+      r"error: unexpected close delimiter: `}`
+  --> /tmp/test.rs:1:1
+   |
+85 | }
+   | ^ unexpected close delimiter
+error: unexpected close delimiter: `}`
+  --> /tmp/test.rs:2:1
+   |
+85 | }
+   | ^ unexpected close delimiter",
+    ));
+    assert_eq!(
+      "/tmp/test.rs:2:1: error: unexpected close delimiter: `}`",
+      &entries[1].to_string()
     )
   }
 }

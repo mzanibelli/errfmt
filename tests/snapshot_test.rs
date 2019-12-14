@@ -11,3 +11,8 @@ fn test_passthrough_snapshot() {
 fn test_php_snapshot() {
   common::run_snapshot("php");
 }
+
+#[test]
+fn test_rust_snapshot() {
+  common::run_snapshot("rust");
+}
