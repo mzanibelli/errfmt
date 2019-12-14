@@ -14,5 +14,6 @@ fn test_php_snapshot() {
 
 #[test]
 fn test_rust_snapshot() {
-  common::run_snapshot("rust");
+  common::run_snapshot("rust-alpha");
+  common::run_snapshot("rust-beta");
 }

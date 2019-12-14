@@ -13,9 +13,9 @@ use entry::Kind;
 use token::ErrFmt;
 use token::Token;
 
-pub fn run(input: String, errfmt: String) -> Result<String, String> {
+pub fn run(input: String, errfmt: String, file: String) -> Result<String, String> {
   Ok(
-    Parser::new(errfmt)
+    Parser::new(errfmt, file)
       .parse(input)
       .iter()
       .map(|entry| entry.to_string())
@@ -27,6 +27,7 @@ pub fn run(input: String, errfmt: String) -> Result<String, String> {
 #[derive(Debug)]
 struct Parser {
   errfmt: ErrFmt,
+  file: String,
 }
 
 /// Parser is responsible for building a set of entries matching the
@@ -34,11 +35,12 @@ struct Parser {
 impl Parser {
   /// Read the configuration (errorformat string) and compute the shape
   /// of an error message.
-  fn new(errfmt: String) -> Self {
+  fn new(errfmt: String, file: String) -> Self {
     Parser {
       errfmt: errfmt::tokenize(errfmt)
         .into_iter()
         .fold(ErrFmt::new(), |acc, t| acc.push(Token::from(&t))),
+      file,
     }
   }
 
@@ -53,13 +55,17 @@ impl Parser {
       })
   }
 
-  /// Add a new location to the result set by reading its data
-  /// from capture groups.
+  /// Add a new location to the result set by reading its data from
+  /// capture groups. Given filename overrides any extracted data in
+  /// case the linter cannot handle this.
   fn build_entry(&self, matches: &regex::Captures) -> Entry {
     let mut entry = Entry::new();
     let mut n = 1; // skip the first capture group as it is the entire string
     for token in &self.errfmt.0 {
       n = mutate_entry(&mut entry, &token, &matches, n);
+      if !String::is_empty(&self.file) {
+        entry.file = self.file.clone();
+      }
     }
     entry
   }
@@ -86,28 +92,34 @@ mod tests {
 
   #[test]
   fn test_parser_from_empty_errfmt() {
-    let actual = Parser::new(String::new()).errfmt.0.len();
+    let actual = Parser::new(String::new(), String::new()).errfmt.0.len();
     let expected = 0;
     assert_eq!(expected, actual)
   }
 
   #[test]
   fn test_parser_should_have_an_entry_if_it_matches() {
-    let sut = Parser::new(String::from("Error: %f:%l:%c: %k: %m"));
+    let sut = Parser::new(String::from("Error: %f:%l:%c: %k: %m"), String::new());
     let entries = sut.parse(String::from("Error: /tmp/foo:42:42: warning: syntax error"));
     assert_eq!(1, entries.len())
   }
 
   #[test]
   fn test_parser_should_keep_matching_groups_only() {
-    let sut = Parser::new(String::from("PHP Parse error: %m in %f on line %l"));
+    let sut = Parser::new(
+      String::from("PHP Parse error: %m in %f on line %l"),
+      String::new(),
+    );
     let entries = sut.parse(String::from("PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 4"));
     assert_eq!(1, entries.len())
   }
 
   #[test]
   fn test_single_line_mode() {
-    let sut = Parser::new(String::from("PHP Parse error: %m in %f on line %l"));
+    let sut = Parser::new(
+      String::from("PHP Parse error: %m in %f on line %l"),
+      String::new(),
+    );
     let entries = sut.parse(String::from("PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 4"));
     assert_eq!(
       "/tmp/test.php:4:1: error:  syntax error, unexpected end of file, expecting ',' or ';'",
@@ -117,7 +129,10 @@ mod tests {
 
   #[test]
   fn test_multiple_entries_with_single_line_mode() {
-    let sut = Parser::new(String::from("PHP Parse error: %m in %f on line %l"));
+    let sut = Parser::new(
+      String::from("PHP Parse error: %m in %f on line %l"),
+      String::new(),
+    );
     let entries = sut.parse(String::from(r"PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 1
 PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 2"));
     assert_eq!(
@@ -128,7 +143,7 @@ PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in 
 
   #[test]
   fn test_multi_line_mode() {
-    let sut = Parser::new(String::from("%k: %m%.  --> %f:%l:%c"));
+    let sut = Parser::new(String::from("%k: %m%.  --> %f:%l:%c"), String::new());
     let entries = sut.parse(String::from(
       r"error: unexpected close delimiter: `}`
   --> /tmp/test.rs:85:1
@@ -144,7 +159,7 @@ PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in 
 
   #[test]
   fn test_multiples_entries_with_multi_line_mode() {
-    let sut = Parser::new(String::from("%k: %m%.  --> %f:%l:%c"));
+    let sut = Parser::new(String::from("%k: %m%.  --> %f:%l:%c"), String::new());
     let entries = sut.parse(String::from(
       r"error: unexpected close delimiter: `}`
   --> /tmp/test.rs:1:1
@@ -160,6 +175,19 @@ error: unexpected close delimiter: `}`
     assert_eq!(
       "/tmp/test.rs:2:1: error: unexpected close delimiter: `}`",
       &entries[1].to_string()
+    )
+  }
+
+  #[test]
+  fn test_filename_must_override_extracted_value() {
+    let sut = Parser::new(
+      String::from("PHP Parse error: %m in %f on line %l"),
+      String::from("/etc/shadow"),
+    );
+    let entries = sut.parse(String::from("PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 4"));
+    assert_eq!(
+      "/etc/shadow:4:1: error:  syntax error, unexpected end of file, expecting ',' or ';'",
+      &entries[0].to_string()
     )
   }
 }

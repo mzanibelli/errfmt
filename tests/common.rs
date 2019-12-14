@@ -5,7 +5,7 @@ pub fn run_snapshot(name: &str) -> () {
 }
 
 fn check_snapshot((input, errfmt, expected): (String, String, String)) -> () {
-  assert_eq!(expected, errfmt::run(input, errfmt).unwrap());
+  assert_eq!(expected, errfmt::run(input, errfmt, String::new()).unwrap());
 }
 
 fn read_snapshot(name: &str) -> (String, String, String) {

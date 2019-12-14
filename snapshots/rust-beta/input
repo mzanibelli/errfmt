@@ -1,0 +1,7 @@
+error: this file contains an un-closed delimiter
+ --> /tmp/test.rs:1:13
+  |
+1 | fn main() {
+  |           - ^
+  |           |
+  |           un-closed delimiter
