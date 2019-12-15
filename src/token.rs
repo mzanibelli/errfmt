@@ -8,12 +8,13 @@ use std::ops::Deref;
 /// pre-defined placeholders that compose an errorformat string.
 #[derive(Debug, Clone)]
 pub enum Token {
-  File,
-  Line,
   Column,
+  File,
   Kind,
-  WhiteSpace,
+  Line,
   Message,
+  Whitespace,
+  Wildcard,
   Literal(String),
 }
 
@@ -22,13 +23,14 @@ impl Token {
   /// the input stream.
   pub fn pattern(&self) -> Result<Regex, Error> {
     match &self {
-      Self::File => Regex::new(r"([^\n]+)"),
-      Self::Line => Regex::new(r"(\d+)"),
       Self::Column => Regex::new(r"(\d+)"),
+      Self::File => Regex::new(r"([^\n]+)"),
       Self::Kind => Regex::new(r"\b([Ww]arning|[Ee]rror)\b"),
-      Self::WhiteSpace => Regex::new(r"(\s+)"),
+      Self::Line => Regex::new(r"(\d+)"),
       Self::Message => Regex::new(r"([^\n]+)"),
-      Self::Literal(value) => Regex::new(&format!("({})", escape_metacharacters(value))),
+      Self::Whitespace => Regex::new(r"(\s+)"),
+      Self::Wildcard => Regex::new(r"([^\n]*?)"),
+      Self::Literal(value) => Regex::new(&escape_metacharacters(value)),
     }
   }
 
@@ -36,12 +38,13 @@ impl Token {
   /// tokens. Acts as a DSL for defining the errorformat string.
   pub fn from(value: &str) -> Self {
     match value {
-      "%f" => Self::File,
-      "%m" => Self::Message,
-      "%l" => Self::Line,
       "%c" => Self::Column,
+      "%f" => Self::File,
       "%k" => Self::Kind,
-      "%." => Self::WhiteSpace,
+      "%l" => Self::Line,
+      "%m" => Self::Message,
+      "%." => Self::Whitespace,
+      "%*" => Self::Wildcard,
       value => Self::Literal(dedupe_percent_signs(value)),
     }
   }
@@ -58,12 +61,12 @@ fn dedupe_percent_signs(value: &str) -> String {
 }
 
 /// Make any given literal string interpreted as non-special character
-/// by the regex.
+/// by the regex. Wrap the result in a capture group.
 fn escape_metacharacters(value: &str) -> String {
   lazy_static! {
     static ref RE: Regex = Regex::new(r"([\\.+*?()|\[\]{}^$])").unwrap();
   }
-  String::from(RE.replace_all(value, r"\$1"))
+  format!("({})", RE.replace_all(value, r"\$1"))
 }
 
 /// Once the errorformat string is read and understood, this structure
@@ -178,7 +181,7 @@ mod tests {
 
   #[test]
   fn test_whitespace_kind_pattern_match() {
-    assert!(token_matches(Token::WhiteSpace, "	 \n"))
+    assert!(token_matches(Token::Whitespace, "	 \n"))
   }
 
   #[test]
@@ -194,6 +197,22 @@ mod tests {
     assert!(token_matches(
       Token::Literal(String::from("foo bar")),
       r"foo bar"
+    ))
+  }
+
+  #[test]
+  fn test_wildcard_pattern_match() {
+    assert!(token_matches(
+      Token::Wildcard,
+      r"E00kdjksh1an"
+    ))
+  }
+
+  #[test]
+  fn test_wildcard_pattern_mismatch() {
+    assert!(token_matches(
+      Token::Wildcard,
+      "hello\nworld"
     ))
   }
 
@@ -253,10 +272,11 @@ mod tests {
       .push(Token::Literal(String::from(" ")))
       .push(Token::Kind)
       .push(Token::Literal(String::from(" ")))
-      .push(Token::WhiteSpace)
+      .push(Token::Whitespace)
+      .push(Token::Wildcard)
       .push(Token::Message);
     let actual = sut.pattern().unwrap().to_string();
-    let expected = r"(\[Linter\]: )([^\n]+)(\d+)(\d+)( )\b([Ww]arning|[Ee]rror)\b( )(\s+)([^\n]+)";
+    let expected = r"(\[Linter\]: )([^\n]+)(\d+)(\d+)( )\b([Ww]arning|[Ee]rror)\b( )(\s+)([^\n]*?)([^\n]+)";
     assert_eq!(expected, actual)
   }
 

@@ -54,10 +54,8 @@ impl Parser {
         .shape
         .pattern()?
         .captures_iter(&input)
-        .fold(Vec::new(), |mut acc, matches| {
-          acc.push(self.build_entry(&matches));
-          acc
-        }),
+        .map(|matches| self.build_entry(&matches))
+        .collect(),
     )
   }
 
@@ -91,11 +89,11 @@ impl Parser {
           String::from(&self.file)
         }
       }
-      Token::Kind => entry.kind = Kind::from(parse_str()),
-      Token::Message => entry.message = String::from(parse_str()),
-      Token::Line => entry.line = parse_u32(),
       Token::Column => entry.column = parse_u32(),
-      Token::WhiteSpace | Token::Literal(_) => (),
+      Token::Kind => entry.kind = Kind::from(parse_str()),
+      Token::Line => entry.line = parse_u32(),
+      Token::Message => entry.message = String::from(parse_str()),
+      Token::Whitespace | Token::Wildcard | Token::Literal(_) => (),
     };
     entry
   }
@@ -106,7 +104,7 @@ mod tests {
   use super::*;
 
   const PHP_ERRFMT: &str = r"%k: %m in %f on line %l";
-  const RUST_ERRFMT: &str = r"%k: %m%.--> %f:%l:%c";
+  const RUST_ERRFMT: &str = r"%k%*: %m%.--> %f:%l:%c";
 
   #[test]
   fn test_parser_from_empty_errfmt() {
@@ -194,5 +192,21 @@ error: unexpected close delimiter: `}`
       "/etc/shadow:4:1: error:  syntax error, unexpected end of file, expecting ',' or ';'",
       &entries[0].to_string()
     )
+  }
+
+  #[test]
+  fn test_wildcard_before_placeholders_must_consume_any_single_line_message() {
+    let sut = Parser::new(String::from("%k%*: %m"), String::new());
+    let entries = sut
+      .parse(String::from("error[zzz]:  syntax error"))
+      .unwrap();
+    assert_eq!(":1:1: error:  syntax error", &entries[0].to_string())
+  }
+
+  #[test]
+  fn test_wildcard_before_placeholders_must_not_be_greedy() {
+    let sut = Parser::new(String::from("%k%*: %m"), String::new());
+    let entries = sut.parse(String::from("error: syntax error: foo")).unwrap();
+    assert_eq!("syntax error: foo", entries[0].message)
   }
 }

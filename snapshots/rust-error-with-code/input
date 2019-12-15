@@ -1,0 +1,8 @@
+error[E0583]: file not found for module `entry`
+ --> /tmp/kak-lint.ENwoMx4F/lib.rs:8:5
+  |
+8 | mod entry;
+  |     ^^^^^
+  |
+  = help: name the file either entry.rs or entry/mod.rs inside the directory "/tmp/kak-lint.ENwoMx4F"
+

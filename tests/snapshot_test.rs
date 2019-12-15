@@ -33,6 +33,6 @@ fn test_rust_backquotes() {
 }
 
 #[test]
-fn test_rust_new() {
-  common::run_snapshot("rust-new");
+fn test_rust_error_with_code() {
+  common::run_snapshot("rust-error-with-code");
 }
