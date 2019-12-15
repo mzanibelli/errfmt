@@ -13,7 +13,7 @@ fn main() {
         println!("{}", output)
       }
     })
-    .unwrap_or_else(|err| eprintln!("{}", err.to_string()))
+    .unwrap_or_else(|err| eprintln!("{}", err))
 }
 
 fn parse_args() -> (String, String) {
