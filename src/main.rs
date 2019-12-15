@@ -5,6 +5,21 @@ use std::io;
 use std::io::Read;
 
 fn main() {
+  let (errfmt, file) = parse_args();
+  invoke_errfmt(errfmt, file)
+    .map(|output| {
+      if !String::is_empty(&output) {
+        println!("{}", output)
+      }
+    })
+    .unwrap_or_else(|err| eprintln!("{}", err.to_string()))
+}
+
+fn parse_args() -> (String, String) {
+  /// This errorformat configuration expects the linter to already conform
+  /// to Kakoune's format.
+  const PASSTHROUGH: &'static str = "%f:%l:%c:  %k: %m";
+
   let args = App::new("errfmt")
     .about("Error messages formatter for kak(1)'s lint.kak script")
     .arg(
@@ -22,19 +37,14 @@ fn main() {
         .help("The name that will replace every filepaths in the output"),
     )
     .get_matches();
-  invoke_parser(
-    args.value_of("errfmt").unwrap().to_string(),
+
+  (
+    args.value_of("errfmt").unwrap_or(PASSTHROUGH).to_string(),
     args.value_of("file").unwrap_or("").to_string(),
   )
-  .map(|output| {
-    if !String::is_empty(&output) {
-      println!("{}", output)
-    }
-  })
-  .unwrap_or_else(|err| eprintln!("{}", err.to_string()))
 }
 
-fn invoke_parser(errfmt: String, file: String) -> Result<String, String> {
+fn invoke_errfmt(errfmt: String, file: String) -> Result<String, String> {
   stdin_lines().and_then(move |lines| errfmt::run(lines, errfmt, file))
 }
 
