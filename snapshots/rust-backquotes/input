@@ -1,0 +1,6 @@
+error: expected type, found keyword `mut`
+  --> /home/mateba/Code/errfmt/src/lib.rs:61:30
+   |
+61 |   fn build_entry(&self, acc: mut Vec<Entry>, matches: &regex::Captures) -> Vec<Entry> {
+   |                              ^^^ expected type
+

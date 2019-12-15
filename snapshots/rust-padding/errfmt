@@ -1,1 +1,1 @@
-error: %m%.\s+--> %f:%l:%c
+../rust.errfmt

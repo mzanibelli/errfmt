@@ -1,10 +1,14 @@
+use regex::Error;
+use regex::Regex;
+use regex::RegexBuilder;
+
 #[derive(Debug, Clone)]
 pub enum Token {
   File,
   Line,
   Column,
   Kind,
-  NewLine,
+  WhiteSpace,
   Message,
   Literal(String),
 }
@@ -14,15 +18,15 @@ pub enum Token {
 impl Token {
   /// Regexes that will be involved in extracting text data from
   /// the input stream.
-  pub fn pattern(&self) -> String {
+  pub fn pattern(&self) -> Result<Regex, Error> {
     match &self {
-      Self::File => String::from(r"([^\n]+)"),
-      Self::Line => String::from(r"(\d+)"),
-      Self::Column => String::from(r"(\d+)"),
-      Self::Kind => String::from(r"\b([Ww]arning|[Ee]rror)\b"),
-      Self::NewLine => String::from(r"\n"),
-      Self::Message => String::from(r"([^\n]+)"),
-      Self::Literal(value) => String::from(value),
+      Self::File => Regex::new(r"([^\n]+)"),
+      Self::Line => Regex::new(r"(\d+)"),
+      Self::Column => Regex::new(r"(\d+)"),
+      Self::Kind => Regex::new(r"\b([Ww]arning|[Ee]rror)\b"),
+      Self::WhiteSpace => Regex::new(r"\s+"),
+      Self::Message => Regex::new(r"([^\n]+)"),
+      Self::Literal(value) => Regex::new(&escape_metacharacters(value)),
     }
   }
 
@@ -35,7 +39,7 @@ impl Token {
       "%l" => Self::Line,
       "%c" => Self::Column,
       "%k" => Self::Kind,
-      "%." => Self::NewLine,
+      "%." => Self::WhiteSpace,
       value => Self::Literal(dedupe_percent_signs(value)),
     }
   }
@@ -51,38 +55,61 @@ fn dedupe_percent_signs(value: &str) -> String {
   }
 }
 
+/// Make any given literal string interpreted as non-special character
+/// by the regex.
+fn escape_metacharacters(value: &str) -> String {
+  lazy_static! {
+    static ref RE: Regex = Regex::new(r"[\\.+*?()|\[\]{}^$]").unwrap();
+  }
+  String::from(RE.replace_all(value, r"\\$1"))
+}
+
 /// Once the errorformat string is read and understood, this structure
 /// represents a sequence of tokens: the shape of an error message.
 #[derive(Debug)]
 pub struct Shape(pub Vec<Token>);
 
 impl Shape {
+  const REGEX_MAX_SIZE: usize = 1024 * 128;
+
+  /// Initialize a new shape, empty by default. This must match nothing.
   pub fn new() -> Self {
     Self(Vec::new())
   }
 
+  /// Add a token to the parser shape.
   pub fn push(self, token: Token) -> Self {
     Self([self.0.to_vec(), vec![token]].concat())
   }
 
-  /// Final pattern is made multi-line and wrapped in a capture
-  /// group.
-  pub fn pattern(&self) -> String {
-    format!("(?m:^{}$)", self.serialize().join(""))
+  /// Final pattern is made multi-line. The pattern ultimately comes
+  /// from user input, it is necessary to limit its size.
+  pub fn pattern(&self) -> Result<Regex, Error> {
+    self.build().and_then(|patterns| {
+      RegexBuilder::new(&self.serialize(patterns).join(""))
+        .size_limit(Self::REGEX_MAX_SIZE)
+        .multi_line(true)
+        .build()
+    })
   }
 
-  fn serialize(&self) -> Vec<String> {
+  /// Try to compile the shape's patterns.
+  fn build(&self) -> Result<Vec<Regex>, Error> {
     self.0.iter().map(|t| t.pattern()).collect()
+  }
+
+  /// Prepare the patterns for display.
+  fn serialize(&self, patterns: Vec<Regex>) -> Vec<String> {
+    patterns.into_iter().map(|p| p.to_string()).collect()
   }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use regex::Regex;
 
   fn token_matches(token: Token, value: &str) -> bool {
-    Regex::new(&token.pattern()).unwrap().is_match(value)
+    token.pattern().unwrap().is_match(value)
   }
 
   #[test]
@@ -139,8 +166,8 @@ mod tests {
   }
 
   #[test]
-  fn test_newline_kind_pattern_match() {
-    assert!(token_matches(Token::NewLine, "\n"))
+  fn test_whitespace_kind_pattern_match() {
+    assert!(token_matches(Token::WhiteSpace, "	 \n"))
   }
 
   #[test]
@@ -168,19 +195,41 @@ mod tests {
   }
 
   #[test]
+  fn test_literal_must_not_be_a_regex() {
+    let tests = vec![
+      vec![r".", r"a"],
+      vec![r"\s", r"	"],
+      vec![r"a+", r"a"],
+      vec![r"a?", r"a"],
+      vec![r"(a)", r"a"],
+      vec![r"a|b", r"a"],
+      vec![r"[a]", r"a"],
+      vec![r"a{1}", r"a"],
+      vec![r"^a", r"a"],
+      vec![r"a$", r"a"],
+    ];
+    for test in tests {
+      assert!(!token_matches(
+        Token::Literal(String::from(test[0])),
+        test[1]
+      ));
+    }
+  }
+
+  #[test]
   fn test_errfmt_pattern() {
     let sut = Shape::new()
-      .push(Token::Literal(String::from("Error: ")))
+      .push(Token::Literal(String::from("Linter: ")))
       .push(Token::File)
       .push(Token::Line)
       .push(Token::Column)
       .push(Token::Literal(String::from(" ")))
       .push(Token::Kind)
       .push(Token::Literal(String::from(" ")))
-      .push(Token::NewLine)
+      .push(Token::WhiteSpace)
       .push(Token::Message);
-    let actual = sut.pattern();
-    let expected = r"(?m:^Error: ([^\n]+)(\d+)(\d+) \b([Ww]arning|[Ee]rror)\b \n([^\n]+)$)";
+    let actual = sut.pattern().unwrap().to_string();
+    let expected = r"Linter: ([^\n]+)(\d+)(\d+) \b([Ww]arning|[Ee]rror)\b \s+([^\n]+)";
     assert_eq!(expected, actual)
   }
 

@@ -17,4 +17,5 @@ fn test_php_snapshot() {
 fn test_rust_snapshot() {
   common::run_snapshot("rust-padding");
   common::run_snapshot("rust-no-padding");
+  common::run_snapshot("rust-backquotes");
 }

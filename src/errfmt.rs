@@ -26,10 +26,10 @@ fn token_start(acc: &[String], c: char) -> bool {
   }
 }
 
-/// A "known" placeholder is a percent-sequence like: %s, %d, %%... etc.
+/// A "known" placeholder is a percent-sequence like: %f, %m, %%... etc.
 fn is_known_placeholder(val: &str) -> bool {
   lazy_static! {
-    static ref RE: Regex = Regex::new(r"^%[%a-z.]$").unwrap();
+    static ref RE: Regex = Regex::new(r"^%[%fmlck.]$").unwrap();
   }
   RE.is_match(val)
 }
