@@ -1,0 +1,1 @@
+/tmp/test.php:3:1: warning:  The use statement with non-compound name 'DateTime' has no effect

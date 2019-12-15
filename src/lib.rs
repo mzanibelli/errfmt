@@ -10,7 +10,7 @@ mod token;
 
 use entry::Entry;
 use entry::Kind;
-use token::ErrFmt;
+use token::Shape;
 use token::Token;
 
 pub fn run(input: String, errfmt: String, file: String) -> Result<String, String> {
@@ -26,7 +26,7 @@ pub fn run(input: String, errfmt: String, file: String) -> Result<String, String
 
 #[derive(Debug)]
 struct Parser {
-  errfmt: ErrFmt,
+  shape: Shape,
   file: String,
 }
 
@@ -37,16 +37,16 @@ impl Parser {
   /// of an error message.
   fn new(errfmt: String, file: String) -> Self {
     Parser {
-      errfmt: errfmt::tokenize(errfmt)
+      shape: errfmt::tokenize(errfmt)
         .into_iter()
-        .fold(ErrFmt::new(), |acc, t| acc.push(Token::from(&t))),
+        .fold(Shape::new(), |acc, t| acc.push(Token::from(&t))),
       file,
     }
   }
 
   /// Return a list of extracted locations.
   fn parse(&self, input: String) -> Vec<Entry> {
-    let pattern = Regex::new(&self.errfmt.pattern()).unwrap();
+    let pattern = Regex::new(&self.shape.pattern()).unwrap();
     pattern
       .captures_iter(&input)
       .fold(Vec::new(), |mut acc, matches| {
@@ -56,34 +56,38 @@ impl Parser {
   }
 
   /// Add a new location to the result set by reading its data from
-  /// capture groups. Given filename overrides any extracted data in
-  /// case the linter cannot handle this.
+  /// capture groups.
   fn build_entry(&self, matches: &regex::Captures) -> Entry {
     let mut entry = Entry::new();
     let mut n = 1; // skip the first capture group as it is the entire string
-    for token in &self.errfmt.0 {
-      n = mutate_entry(&mut entry, &token, &matches, n);
-      if !String::is_empty(&self.file) {
-        entry.file = self.file.clone();
-      }
+    for token in &self.shape.0 {
+      n = self.mutate_entry(&mut entry, &token, &matches, n);
     }
     entry
   }
-}
 
-/// Update a given entry according to the corresponding token.
-fn mutate_entry(entry: &mut Entry, token: &Token, matches: &Captures, n: usize) -> usize {
-  let parse_str = || matches.get(n).unwrap().as_str();
-  let parse_u32 = || parse_str().parse::<u32>().unwrap();
-  match token {
-    Token::File => entry.file = String::from(parse_str()),
-    Token::Kind => entry.kind = Kind::from(parse_str()),
-    Token::Message => entry.message = String::from(parse_str()),
-    Token::Line => entry.line = parse_u32(),
-    Token::Column => entry.column = parse_u32(),
-    Token::NewLine | Token::Literal(_) => return n, // do not consume next match
-  };
-  n + 1
+  /// Update a given entry according to the corresponding token.
+  /// Given filename overrides any extracted data in case the linter
+  /// cannot handle this.
+  fn mutate_entry(&self, entry: &mut Entry, token: &Token, matches: &Captures, n: usize) -> usize {
+    let parse_str = || matches.get(n).unwrap().as_str();
+    let parse_u32 = || parse_str().parse::<u32>().unwrap();
+    match token {
+      Token::File => {
+        entry.file = if String::is_empty(&self.file) {
+          String::from(parse_str())
+        } else {
+          String::from(&self.file)
+        }
+      }
+      Token::Kind => entry.kind = Kind::from(parse_str()),
+      Token::Message => entry.message = String::from(parse_str()),
+      Token::Line => entry.line = parse_u32(),
+      Token::Column => entry.column = parse_u32(),
+      Token::NewLine | Token::Literal(_) => return n, // do not consume next match
+    };
+    n + 1
+  }
 }
 
 #[cfg(test)]
@@ -92,7 +96,7 @@ mod tests {
 
   #[test]
   fn test_parser_from_empty_errfmt() {
-    let actual = Parser::new(String::new(), String::new()).errfmt.0.len();
+    let actual = Parser::new(String::new(), String::new()).shape.0.len();
     let expected = 0;
     assert_eq!(expected, actual)
   }

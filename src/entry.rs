@@ -47,7 +47,7 @@ const KIND_ERROR: &str = "error";
 
 impl Kind {
   pub fn from(value: &str) -> Self {
-    match value {
+    match value.to_lowercase().as_str() {
       KIND_WARNING => Kind::Warning,
       KIND_ERROR => Kind::Error,
       value => panic!("unexpected kind: {}", value),
@@ -85,6 +85,20 @@ mod tests {
     sut.kind = Kind::Warning;
     sut.message = String::from("syntax error");
     let actual = sut.to_string();
+    assert_eq!(expected, actual)
+  }
+
+  #[test]
+  fn test_capitalized_error_kind() {
+    let expected = Kind::Error.to_string();
+    let actual = Kind::from("Error").to_string()	;
+    assert_eq!(expected, actual)
+  }
+
+  #[test]
+  fn test_capitalized_warning_kind() {
+    let expected = Kind::Warning.to_string();
+    let actual = Kind::from("Warning").to_string()	;
     assert_eq!(expected, actual)
   }
 }

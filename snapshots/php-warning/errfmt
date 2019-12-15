@@ -1,0 +1,1 @@
+[^\n]+ %k: %m in %f on line %l

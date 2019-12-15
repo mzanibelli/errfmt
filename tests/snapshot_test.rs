@@ -9,7 +9,8 @@ fn test_passthrough_snapshot() {
 
 #[test]
 fn test_php_snapshot() {
-  common::run_snapshot("php");
+  common::run_snapshot("php-error");
+  common::run_snapshot("php-warning");
 }
 
 #[test]

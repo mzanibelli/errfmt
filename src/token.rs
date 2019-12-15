@@ -19,7 +19,7 @@ impl Token {
       Self::File => String::from(r"([^\n]+)"),
       Self::Line => String::from(r"(\d+)"),
       Self::Column => String::from(r"(\d+)"),
-      Self::Kind => String::from(r"\b(warning|error)\b"),
+      Self::Kind => String::from(r"\b([Ww]arning|[Ee]rror)\b"),
       Self::NewLine => String::from(r"\n"),
       Self::Message => String::from(r"([^\n]+)"),
       Self::Literal(value) => String::from(value),
@@ -54,9 +54,9 @@ fn dedupe_percent_signs(value: &str) -> String {
 /// Once the errorformat string is read and understood, this structure
 /// represents a sequence of tokens: the shape of an error message.
 #[derive(Debug)]
-pub struct ErrFmt(pub Vec<Token>);
+pub struct Shape(pub Vec<Token>);
 
-impl ErrFmt {
+impl Shape {
   pub fn new() -> Self {
     Self(Vec::new())
   }
@@ -119,6 +119,16 @@ mod tests {
   }
 
   #[test]
+  fn test_capitalized_warning_kind_pattern_match() {
+    assert!(token_matches(Token::Kind, r"Warning"))
+  }
+
+  #[test]
+  fn test_capitalized_error_kind_pattern_match() {
+    assert!(token_matches(Token::Kind, r"Error"))
+  }
+
+  #[test]
   fn test_warning_kind_pattern_mismatch() {
     assert!(!token_matches(Token::Kind, r"globalwarning"))
   }
@@ -159,7 +169,7 @@ mod tests {
 
   #[test]
   fn test_errfmt_pattern() {
-    let sut = ErrFmt::new()
+    let sut = Shape::new()
       .push(Token::Literal(String::from("Error: ")))
       .push(Token::File)
       .push(Token::Line)
@@ -170,7 +180,7 @@ mod tests {
       .push(Token::NewLine)
       .push(Token::Message);
     let actual = sut.pattern();
-    let expected = r"(?m:^Error: ([^\n]+)(\d+)(\d+) \b(warning|error)\b \n([^\n]+)$)";
+    let expected = r"(?m:^Error: ([^\n]+)(\d+)(\d+) \b([Ww]arning|[Ee]rror)\b \n([^\n]+)$)";
     assert_eq!(expected, actual)
   }
 
