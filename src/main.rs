@@ -6,8 +6,6 @@ use std::io::Read;
 
 fn main() {
   let args = App::new("errfmt")
-    .version("0.0.1")
-    .author("mzanibelli")
     .about("Error messages formatter for kak(1)'s lint.kak script")
     .arg(
       Arg::with_name("errfmt")
