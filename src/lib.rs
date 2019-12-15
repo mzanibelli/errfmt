@@ -14,26 +14,28 @@ use entry::Kind;
 use token::Shape;
 use token::Token;
 
-pub fn run(input: String, errfmt: String, file: String) -> Result<String, String> {
+/// Entrypoint of the program: configure the errorformat string and
+/// de-facto filename then filter input to re-shape it into the expected
+/// format.
+pub fn run(input: String, errfmt: String, file: String) -> Result<Vec<String>, String> {
   Ok(
     Parser::new(errfmt, file)
       .parse(input)
       .map_err(|err| err.to_string())?
       .iter()
       .map(|entry| entry.to_string())
-      .collect::<Vec<String>>()
-      .join("\n"),
+      .collect()
   )
 }
 
+/// Parser is responsible for building a set of entries matching the
+/// extracted error messages.
 #[derive(Debug)]
 struct Parser {
   shape: Shape,
   file: String,
 }
 
-/// Parser is responsible for building a set of entries matching the
-/// extracted error messages.
 impl Parser {
   /// Read the configuration (errorformat string) and compute the shape
   /// of an error message.

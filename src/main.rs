@@ -7,6 +7,7 @@ use std::io::Read;
 fn main() {
   let (errfmt, file) = parse_args();
   invoke_errfmt(errfmt, file)
+    .map(|output| output.join("\n"))
     .map(|output| {
       if !String::is_empty(&output) {
         println!("{}", output)
@@ -18,7 +19,7 @@ fn main() {
 fn parse_args() -> (String, String) {
   /// This errorformat configuration expects the linter to already conform
   /// to Kakoune's format.
-  const PASSTHROUGH: &'static str = "%f:%l:%c:  %k: %m";
+  const PASSTHROUGH: &'static str = "%f:%l:%c: %k: %m";
 
   let args = App::new("errfmt")
     .about("Error messages formatter for kak(1)'s lint.kak script")
@@ -44,7 +45,7 @@ fn parse_args() -> (String, String) {
   )
 }
 
-fn invoke_errfmt(errfmt: String, file: String) -> Result<String, String> {
+fn invoke_errfmt(errfmt: String, file: String) -> Result<Vec<String>, String> {
   stdin_lines().and_then(move |lines| errfmt::run(lines, errfmt, file))
 }
 
