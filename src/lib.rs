@@ -3,6 +3,7 @@ extern crate lazy_static;
 
 use regex::Captures;
 use regex::Error;
+use regex::Match;
 
 mod entry;
 mod errfmt;
@@ -62,20 +63,25 @@ impl Parser {
 
   /// Add a new location to the result set by reading its data from
   /// capture groups.
-  fn build_entry(&self, matches: &regex::Captures) -> Entry {
-    let mut entry = Entry::new();
-    let mut n = 1; // skip the first capture group as it is the entire string
-    for token in &self.shape.0 {
-      n = self.mutate_entry(&mut entry, &token, &matches, n);
-    }
-    entry
+  fn build_entry(&self, matches: &Captures) -> Entry {
+    self
+      .shape
+      .iter()
+      .enumerate()
+      // Ignore the first match as it is the entire string.
+      .map(|(n, token)| (matches.get(n + 1), token))
+      .fold(Entry::new(), |entry, (group, token)| {
+        self.mutate_entry(entry, token, group)
+      })
   }
 
   /// Update a given entry according to the corresponding token.
   /// Given filename overrides any extracted data in case the linter
-  /// cannot handle this.
-  fn mutate_entry(&self, entry: &mut Entry, token: &Token, matches: &Captures, n: usize) -> usize {
-    let parse_str = || matches.get(n).unwrap().as_str();
+  /// cannot handle this. This function will easily panic in case there
+  /// is no matching capture group or if the data could not be converted
+  /// to an integer in the appropriate cases.
+  fn mutate_entry(&self, mut entry: Entry, token: &Token, data: Option<Match>) -> Entry {
+    let parse_str = || data.unwrap().as_str();
     let parse_u32 = || parse_str().parse::<u32>().unwrap();
     match token {
       Token::File => {
@@ -89,9 +95,9 @@ impl Parser {
       Token::Message => entry.message = String::from(parse_str()),
       Token::Line => entry.line = parse_u32(),
       Token::Column => entry.column = parse_u32(),
-      Token::WhiteSpace | Token::Literal(_) => return n, // do not consume next match
+      Token::WhiteSpace | Token::Literal(_) => (),
     };
-    n + 1
+    entry
   }
 }
 

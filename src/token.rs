@@ -1,7 +1,11 @@
 use regex::Error;
 use regex::Regex;
 use regex::RegexBuilder;
+use std::ops::Deref;
 
+
+/// A Token is a section of input data. It can be referred to using
+/// pre-defined placeholders that compose an errorformat string.
 #[derive(Debug, Clone)]
 pub enum Token {
   File,
@@ -13,8 +17,6 @@ pub enum Token {
   Literal(String),
 }
 
-/// A Token is a section of input data. It can be referred to using
-/// pre-defined placeholders that compose an errorformat string.
 impl Token {
   /// Regexes that will be involved in extracting text data from
   /// the input stream.
@@ -24,9 +26,9 @@ impl Token {
       Self::Line => Regex::new(r"(\d+)"),
       Self::Column => Regex::new(r"(\d+)"),
       Self::Kind => Regex::new(r"\b([Ww]arning|[Ee]rror)\b"),
-      Self::WhiteSpace => Regex::new(r"\s+"),
+      Self::WhiteSpace => Regex::new(r"(\s+)"),
       Self::Message => Regex::new(r"([^\n]+)"),
-      Self::Literal(value) => Regex::new(&escape_metacharacters(value)),
+      Self::Literal(value) => Regex::new(&format!("({})", escape_metacharacters(value))),
     }
   }
 
@@ -59,15 +61,24 @@ fn dedupe_percent_signs(value: &str) -> String {
 /// by the regex.
 fn escape_metacharacters(value: &str) -> String {
   lazy_static! {
-    static ref RE: Regex = Regex::new(r"[\\.+*?()|\[\]{}^$]").unwrap();
+    static ref RE: Regex = Regex::new(r"([\\.+*?()|\[\]{}^$])").unwrap();
   }
-  String::from(RE.replace_all(value, r"\\$1"))
+  String::from(RE.replace_all(value, r"\$1"))
 }
 
 /// Once the errorformat string is read and understood, this structure
 /// represents a sequence of tokens: the shape of an error message.
 #[derive(Debug)]
 pub struct Shape(pub Vec<Token>);
+
+/// Make sure we can access iterator methods quickly and concisely.
+impl Deref for Shape {
+    type Target = Vec<Token>;
+
+    fn deref(&self) -> &Vec<Token> {
+        &self.0
+    }
+}
 
 impl Shape {
   const REGEX_MAX_SIZE: usize = 1024 * 128;
@@ -79,7 +90,7 @@ impl Shape {
 
   /// Add a token to the parser shape.
   pub fn push(self, token: Token) -> Self {
-    Self([self.0.to_vec(), vec![token]].concat())
+    Self([self.to_vec(), vec![token]].concat())
   }
 
   /// Final pattern is made multi-line. The pattern ultimately comes
@@ -95,7 +106,7 @@ impl Shape {
 
   /// Try to compile the shape's patterns.
   fn build(&self) -> Result<Vec<Regex>, Error> {
-    self.0.iter().map(|t| t.pattern()).collect()
+    self.iter().map(|t| t.pattern()).collect()
   }
 
   /// Prepare the patterns for display.
@@ -217,9 +228,25 @@ mod tests {
   }
 
   #[test]
+  fn test_literal_must_work_with_metacharacters() {
+    let tests = vec![
+      vec![r".", r"."],
+      vec![r"(a)", r"(a)"],
+      vec![r"a|b", r"a|b"],
+      vec![r"[a]", r"[a]"],
+    ];
+    for test in tests {
+      assert!(token_matches(
+        Token::Literal(String::from(test[0])),
+        test[1]
+      ));
+    }
+  }
+
+  #[test]
   fn test_errfmt_pattern() {
     let sut = Shape::new()
-      .push(Token::Literal(String::from("Linter: ")))
+      .push(Token::Literal(String::from("[Linter]: ")))
       .push(Token::File)
       .push(Token::Line)
       .push(Token::Column)
@@ -229,7 +256,7 @@ mod tests {
       .push(Token::WhiteSpace)
       .push(Token::Message);
     let actual = sut.pattern().unwrap().to_string();
-    let expected = r"Linter: ([^\n]+)(\d+)(\d+) \b([Ww]arning|[Ee]rror)\b \s+([^\n]+)";
+    let expected = r"(\[Linter\]: )([^\n]+)(\d+)(\d+)( )\b([Ww]arning|[Ee]rror)\b( )(\s+)([^\n]+)";
     assert_eq!(expected, actual)
   }
 

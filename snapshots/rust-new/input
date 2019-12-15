@@ -1,0 +1,15 @@
+error: expected one of `.`, `;`, `?`, `}`, or an operator, found `entry`
+  --> /home/mateba/Code/errfmt/src/lib.rs:73:5
+   |
+67 |         self.shape.0.iter().enumerate().map(|(n, token)| (matches.get(n), token)).fold(Entry::new(), |entry, (group, token)| self.mutate_entry(entry, &token, group))
+   |                                                                                                                                                                      - expected one of `.`, `;`, `?`, `}`, or an operator here
+...
+73 |     entry
+   |     ^^^^^ unexpected token
+
+error: expected type, found keyword `mut`
+  --> /home/mateba/Code/errfmt/src/lib.rs:79:33
+   |
+79 |   fn mutate_entry(&self, entry: mut Entry, token: &Token, group: Option<Match>) -> Entry {
+   |                                 ^^^ expected type
+

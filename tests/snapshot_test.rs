@@ -8,14 +8,31 @@ fn test_passthrough_snapshot() {
 }
 
 #[test]
-fn test_php_snapshot() {
+fn test_php_error() {
   common::run_snapshot("php-error");
+}
+
+#[test]
+fn test_php_warning() {
   common::run_snapshot("php-warning");
 }
 
 #[test]
-fn test_rust_snapshot() {
+fn test_rust_padding() {
   common::run_snapshot("rust-padding");
+}
+
+#[test]
+fn test_rust_no_padding() {
   common::run_snapshot("rust-no-padding");
+}
+
+#[test]
+fn test_rust_backquotes() {
   common::run_snapshot("rust-backquotes");
+}
+
+#[test]
+fn test_rust_new() {
+  common::run_snapshot("rust-new");
 }

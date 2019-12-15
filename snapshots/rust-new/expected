@@ -1,0 +1,2 @@
+/home/mateba/Code/errfmt/src/lib.rs:73:5: error: expected one of `.`, `;`, `?`, `}`, or an operator, found `entry`
+/home/mateba/Code/errfmt/src/lib.rs:79:33: error: expected type, found keyword `mut`
