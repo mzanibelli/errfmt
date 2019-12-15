@@ -3,7 +3,6 @@ use regex::Regex;
 use regex::RegexBuilder;
 use std::ops::Deref;
 
-
 /// A Token is a section of input data. It can be referred to using
 /// pre-defined placeholders that compose an errorformat string.
 #[derive(Debug, Clone)]
@@ -76,11 +75,11 @@ pub struct Shape(pub Vec<Token>);
 
 /// Make sure we can access iterator methods quickly and concisely.
 impl Deref for Shape {
-    type Target = Vec<Token>;
+  type Target = Vec<Token>;
 
-    fn deref(&self) -> &Vec<Token> {
-        &self.0
-    }
+  fn deref(&self) -> &Vec<Token> {
+    &self.0
+  }
 }
 
 impl Shape {
@@ -202,18 +201,12 @@ mod tests {
 
   #[test]
   fn test_wildcard_pattern_match() {
-    assert!(token_matches(
-      Token::Wildcard,
-      r"E00kdjksh1an"
-    ))
+    assert!(token_matches(Token::Wildcard, r"E00kdjksh1an"))
   }
 
   #[test]
   fn test_wildcard_pattern_mismatch() {
-    assert!(token_matches(
-      Token::Wildcard,
-      "hello\nworld"
-    ))
+    assert!(token_matches(Token::Wildcard, "hello\nworld"))
   }
 
   #[test]
@@ -276,7 +269,8 @@ mod tests {
       .push(Token::Wildcard)
       .push(Token::Message);
     let actual = sut.pattern().unwrap().to_string();
-    let expected = r"(\[Linter\]: )([^\n]+)(\d+)(\d+)( )\b([Ww]arning|[Ee]rror)\b( )(\s+)([^\n]*?)([^\n]+)";
+    let expected =
+      r"(\[Linter\]: )([^\n]+)(\d+)(\d+)( )\b([Ww]arning|[Ee]rror)\b( )(\s+)([^\n]*?)([^\n]+)";
     assert_eq!(expected, actual)
   }
 

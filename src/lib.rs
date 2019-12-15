@@ -24,7 +24,7 @@ pub fn run(input: String, errfmt: String, file: String) -> Result<Vec<String>, S
       .map_err(|err| err.to_string())?
       .iter()
       .map(|entry| entry.to_string())
-      .collect()
+      .collect(),
   )
 }
 
