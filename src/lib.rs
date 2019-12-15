@@ -94,6 +94,9 @@ impl Parser {
 mod tests {
   use super::*;
 
+  const PHP_ERRFMT: &str = r"[^\n]+ %k: %m in %f on line %l";
+  const RUST_ERRFMT: &str = r"%k: %m%.\s+--> %f:%l:%c";
+
   #[test]
   fn test_parser_from_empty_errfmt() {
     let actual = Parser::new(String::new(), String::new()).shape.0.len();
@@ -109,19 +112,9 @@ mod tests {
   }
 
   #[test]
-  fn test_parser_should_keep_matching_groups_only() {
-    let sut = Parser::new(
-      String::from("PHP Parse error: %m in %f on line %l"),
-      String::new(),
-    );
-    let entries = sut.parse(String::from("PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 4"));
-    assert_eq!(1, entries.len())
-  }
-
-  #[test]
   fn test_single_line_mode() {
     let sut = Parser::new(
-      String::from("PHP Parse error: %m in %f on line %l"),
+      String::from(PHP_ERRFMT),
       String::new(),
     );
     let entries = sut.parse(String::from("PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 4"));
@@ -134,7 +127,7 @@ mod tests {
   #[test]
   fn test_multiple_entries_with_single_line_mode() {
     let sut = Parser::new(
-      String::from("PHP Parse error: %m in %f on line %l"),
+      String::from(PHP_ERRFMT),
       String::new(),
     );
     let entries = sut.parse(String::from(r"PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 1
@@ -147,7 +140,7 @@ PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in 
 
   #[test]
   fn test_multi_line_mode() {
-    let sut = Parser::new(String::from("%k: %m%.  --> %f:%l:%c"), String::new());
+    let sut = Parser::new(String::from(RUST_ERRFMT), String::new());
     let entries = sut.parse(String::from(
       r"error: unexpected close delimiter: `}`
   --> /tmp/test.rs:85:1
@@ -163,7 +156,7 @@ PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in 
 
   #[test]
   fn test_multiples_entries_with_multi_line_mode() {
-    let sut = Parser::new(String::from("%k: %m%.  --> %f:%l:%c"), String::new());
+    let sut = Parser::new(String::from(RUST_ERRFMT), String::new());
     let entries = sut.parse(String::from(
       r"error: unexpected close delimiter: `}`
   --> /tmp/test.rs:1:1
@@ -185,7 +178,7 @@ error: unexpected close delimiter: `}`
   #[test]
   fn test_filename_must_override_extracted_value() {
     let sut = Parser::new(
-      String::from("PHP Parse error: %m in %f on line %l"),
+      String::from(PHP_ERRFMT),
       String::from("/etc/shadow"),
     );
     let entries = sut.parse(String::from("PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 4"));
