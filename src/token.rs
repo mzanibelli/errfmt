@@ -83,6 +83,9 @@ impl Deref for Shape {
 }
 
 impl Shape {
+  /// Keep in mind this is an approximate size. Also, from my
+  /// understanding, this represents the amount of memory needed
+  /// by a regex *once compiled*.
   const REGEX_MAX_SIZE: usize = 1024 * 128;
 
   /// Initialize a new shape, empty by default. This must match nothing.

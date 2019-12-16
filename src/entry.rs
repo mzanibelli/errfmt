@@ -10,7 +10,7 @@ pub struct Entry {
 }
 
 /// An Entry is a location (file, line) that is meant to be compatible
-/// with kakoune(1)'s definition.
+/// with kak(1)'s definition.
 impl Entry {
   pub fn new() -> Self {
     Entry {
