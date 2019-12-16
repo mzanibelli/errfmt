@@ -4,6 +4,9 @@ target/debug/errfmt: $(src)
 	cargo test
 	cargo build
 
+test:
+	cargo test
+
 install:
 	cargo install --path . --force
 
