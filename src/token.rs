@@ -76,7 +76,6 @@ pub struct Shape(pub Vec<Token>);
 /// Make sure we can access iterator methods quickly and concisely.
 impl Deref for Shape {
   type Target = Vec<Token>;
-
   fn deref(&self) -> &Vec<Token> {
     &self.0
   }
@@ -280,8 +279,7 @@ mod tests {
       .push(Token::Wildcard)
       .push(Token::Message);
     let actual = sut.pattern().unwrap().to_string();
-    let expected =
-      r"(\[Linter\]: )([^\x00]+?)(\d+)(\d+)( )(\b[a-zA-Z]+\b)( )(\s+)(.*?)([^\n]+)";
+    let expected = r"(\[Linter\]: )([^\x00]+?)(\d+)(\d+)( )(\b[a-zA-Z]+\b)( )(\s+)(.*?)([^\n]+)";
     assert_eq!(expected, actual)
   }
 
