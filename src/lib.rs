@@ -17,8 +17,10 @@ use token::Token;
 /// Documentation of what works and has been tested so far...
 pub const PASSTHROUGH_ERRFMT: &str = r"%f:%l:%c: %k: %m";
 pub const PHP_ERRFMT: &str = r"%k: %m in %f on line %l";
-pub const RUST_ERRFMT: &str = r"%k%*: %m%.--> %f:%l:%c";
+pub const RUSTFMT_ERRFMT: &str = r"%k%*: %m%.--> %f:%l:%c";
+pub const GOLINT_ERRFMT: &str = r"%f:%l:%c: %m";
 pub const ESLINT_ERRFMT: &str = r"%f%.%l:%c  %k  %m";
+pub const SHELLCHECK_ERRFMT: &str = r"%f:%l:%c: %k: %m";
 
 /// Entrypoint of the program: configure the errorformat string and
 /// de-facto filename then filter input to re-shape it into the expected
@@ -150,7 +152,7 @@ PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in 
 
   #[test]
   fn test_multi_line_mode() {
-    let sut = Parser::new(String::from(RUST_ERRFMT), String::new());
+    let sut = Parser::new(String::from(RUSTFMT_ERRFMT), String::new());
     let entries = sut
       .parse(String::from(
         r"error: unexpected close delimiter: `}`
@@ -168,7 +170,7 @@ PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in 
 
   #[test]
   fn test_multiples_entries_with_multi_line_mode() {
-    let sut = Parser::new(String::from(RUST_ERRFMT), String::new());
+    let sut = Parser::new(String::from(RUSTFMT_ERRFMT), String::new());
     let entries = sut
       .parse(String::from(
         r"error: unexpected close delimiter: `}`

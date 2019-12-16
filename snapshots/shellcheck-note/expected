@@ -1,0 +1,1 @@
+/tmp/test.sh:11:6: warning: Double quote to prevent globbing and word splitting. [SC2086]

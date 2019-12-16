@@ -42,16 +42,17 @@ pub enum Kind {
   Error,
 }
 
-const KIND_WARNING: &str = "warning";
-const KIND_ERROR: &str = "error";
+const WARNING: &str = "warning";
+const ERROR: &str = "error";
+const NOTE: &str = "note";
 
 impl Kind {
   /// Must accept capitalized words to handle various linter
   /// formats.
   pub fn from(value: &str) -> Self {
     match value.to_lowercase().as_str() {
-      KIND_WARNING => Kind::Warning,
-      KIND_ERROR => Kind::Error,
+      WARNING | NOTE => Kind::Warning,
+      ERROR => Kind::Error,
       value => panic!("unexpected kind: {}", value),
     }
   }
@@ -60,8 +61,8 @@ impl Kind {
 impl fmt::Display for Kind {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      Kind::Warning => write!(f, "{}", KIND_WARNING),
-      Kind::Error => write!(f, "{}", KIND_ERROR),
+      Kind::Warning => write!(f, "{}", WARNING),
+      Kind::Error => write!(f, "{}", ERROR),
     }
   }
 }
@@ -91,16 +92,30 @@ mod tests {
   }
 
   #[test]
-  fn test_capitalized_error_kind() {
+  fn test_error_kind() {
     let expected = Kind::Error.to_string();
-    let actual = Kind::from("Error").to_string();
+    let actual = Kind::from("error").to_string();
     assert_eq!(expected, actual)
   }
 
   #[test]
-  fn test_capitalized_warning_kind() {
+  fn test_warning_kind() {
     let expected = Kind::Warning.to_string();
-    let actual = Kind::from("Warning").to_string();
+    let actual = Kind::from("warning").to_string();
+    assert_eq!(expected, actual)
+  }
+
+  #[test]
+  fn test_note_kind() {
+    let expected = Kind::Warning.to_string();
+    let actual = Kind::from("note").to_string();
+    assert_eq!(expected, actual)
+  }
+
+  #[test]
+  fn test_word_can_be_capitalized() {
+    let expected = Kind::Error.to_string();
+    let actual = Kind::from("Error").to_string();
     assert_eq!(expected, actual)
   }
 }

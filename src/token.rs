@@ -24,7 +24,7 @@ impl Token {
     match &self {
       Self::Column => Regex::new(r"(\d+)"),
       Self::File => Regex::new(r"([^\n]+)"),
-      Self::Kind => Regex::new(r"\b([Ww]arning|[Ee]rror)\b"),
+      Self::Kind => Regex::new(r"\b([a-zA-Z]+)\b"),
       Self::Line => Regex::new(r"(\d+)"),
       Self::Message => Regex::new(r"([^\n]+)"),
       Self::Whitespace => Regex::new(r"(\s+)"),
@@ -152,38 +152,23 @@ mod tests {
   }
 
   #[test]
-  fn test_warning_kind_pattern_match() {
-    assert!(token_matches(Token::Kind, r"warning"))
+  fn test_kind_pattern_match() {
+    assert!(token_matches(Token::Kind, r"anyWord"))
   }
 
   #[test]
-  fn test_error_kind_pattern_match() {
-    assert!(token_matches(Token::Kind, r"error"))
+  fn test_kind_pattern_mismatch() {
+    assert!(!token_matches(Token::Kind, r"[notG00d]"))
   }
 
   #[test]
-  fn test_capitalized_warning_kind_pattern_match() {
-    assert!(token_matches(Token::Kind, r"Warning"))
-  }
-
-  #[test]
-  fn test_capitalized_error_kind_pattern_match() {
-    assert!(token_matches(Token::Kind, r"Error"))
-  }
-
-  #[test]
-  fn test_warning_kind_pattern_mismatch() {
-    assert!(!token_matches(Token::Kind, r"globalwarning"))
-  }
-
-  #[test]
-  fn test_error_kind_pattern_mismatch() {
-    assert!(!token_matches(Token::Kind, r"errorized"))
-  }
-
-  #[test]
-  fn test_whitespace_kind_pattern_match() {
+  fn test_whitespace_pattern_match() {
     assert!(token_matches(Token::Whitespace, "	 \n"))
+  }
+
+  #[test]
+  fn test_whitespace_pattern_mismatch() {
+    assert!(!token_matches(Token::Whitespace, "abcd"))
   }
 
   #[test]
@@ -195,10 +180,10 @@ mod tests {
   }
 
   #[test]
-  fn test_literal_pattern_match() {
+  fn test_message_pattern_mismatch() {
     assert!(token_matches(
-      Token::Literal(String::from("foo bar")),
-      r"foo bar"
+      Token::Message,
+      r"Messages cannot be\nmulti-line..."
     ))
   }
 
@@ -210,6 +195,14 @@ mod tests {
   #[test]
   fn test_wildcard_pattern_mismatch() {
     assert!(token_matches(Token::Wildcard, "hello\nworld"))
+  }
+
+  #[test]
+  fn test_literal_pattern_match() {
+    assert!(token_matches(
+      Token::Literal(String::from("foo bar")),
+      r"foo bar"
+    ))
   }
 
   #[test]
@@ -259,7 +252,7 @@ mod tests {
   }
 
   #[test]
-  fn test_errfmt_pattern() {
+  fn test_full_featured_regex_as_string() {
     let sut = Shape::new()
       .push(Token::Literal(String::from("[Linter]: ")))
       .push(Token::File)
@@ -273,7 +266,7 @@ mod tests {
       .push(Token::Message);
     let actual = sut.pattern().unwrap().to_string();
     let expected =
-      r"(\[Linter\]: )([^\n]+)(\d+)(\d+)( )\b([Ww]arning|[Ee]rror)\b( )(\s+)([^\n]*?)([^\n]+)";
+      r"(\[Linter\]: )([^\n]+)(\d+)(\d+)( )\b([a-zA-Z]+)\b( )(\s+)([^\n]*?)([^\n]+)";
     assert_eq!(expected, actual)
   }
 
