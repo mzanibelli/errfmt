@@ -14,13 +14,12 @@ use entry::Kind;
 use token::Shape;
 use token::Token;
 
-/// Documentation of what works and has been tested so far...
-pub const PASSTHROUGH_ERRFMT: &str = r"%f:%l:%c: %k: %m";
-pub const PHP_ERRFMT: &str = r"%k: %m in %f on line %l";
-pub const RUSTFMT_ERRFMT: &str = r"%k%*: %m%.--> %f:%l:%c";
-pub const GOLINT_ERRFMT: &str = r"%f:%l:%c: %m";
-pub const ESLINT_ERRFMT: &str = r"%f%.%l:%c  %k  %m";
-pub const SHELLCHECK_ERRFMT: &str = r"%f:%l:%c: %k: %m";
+pub use crate::errfmt::ESLINT_ERRFMT;
+pub use crate::errfmt::GOLINT_ERRFMT;
+pub use crate::errfmt::PASSTHROUGH_ERRFMT;
+pub use crate::errfmt::PHP_ERRFMT;
+pub use crate::errfmt::RUSTFMT_ERRFMT;
+pub use crate::errfmt::SHELLCHECK_ERRFMT;
 
 /// Entrypoint of the program: configure the errorformat string and
 /// de-facto filename then filter input to re-shape it into the expected

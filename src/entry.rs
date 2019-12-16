@@ -1,5 +1,7 @@
 use std::fmt;
 
+/// An Entry is a location (file, line) that is meant to be compatible
+/// with kak(1)'s definition.
 #[derive(Debug)]
 pub struct Entry {
   pub file: String,
@@ -9,9 +11,9 @@ pub struct Entry {
   pub message: String,
 }
 
-/// An Entry is a location (file, line) that is meant to be compatible
-/// with kak(1)'s definition.
 impl Entry {
+  /// Default values are for the most part meaningful and allows
+  /// partially complete linters to step up their game for free.
   pub fn new() -> Self {
     Entry {
       file: String::new(),
@@ -23,8 +25,8 @@ impl Entry {
   }
 }
 
-/// Must match kakoune's expected format. See lint.kak from standard
-/// rc scripts.
+/// Must match kakoune's expected format. See lint.kak from standard rc
+/// scripts. One day, this will maybe support other output formats...
 impl fmt::Display for Entry {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     write!(
@@ -35,13 +37,16 @@ impl fmt::Display for Entry {
   }
 }
 
-/// Simple representation of the error's log-level.
+/// Simple representation of the error's log-level. The possible variants
+/// are purposedly limited here: lint.kak script only supports these two.
 #[derive(Debug)]
 pub enum Kind {
   Warning,
   Error,
 }
 
+/// Explicitely add encountered notations here instead of blindly accept
+/// any word and be forced to use an incorrect default value.
 const WARNING: &str = "warning";
 const ERROR: &str = "error";
 const NOTE: &str = "note";

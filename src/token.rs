@@ -18,13 +18,15 @@ pub enum Token {
 }
 
 impl Token {
-  /// Regexes that will be involved in extracting text data from
-  /// the input stream.
+  /// Regexes that will be involved in extracting text data from the input
+  /// stream. POSIX allows any character except null bytes in filename,
+  /// but supporting new lines brings a whole class of problems I don't
+  /// want to deal with.
   pub fn pattern(&self) -> Result<Regex, Error> {
     match &self {
       Self::Column => Regex::new(r"(\d+)"),
-      Self::File => Regex::new(r"([^\n]+)"),
-      Self::Kind => Regex::new(r"\b([a-zA-Z]+)\b"),
+      Self::File => Regex::new(r"([^\x00\n]+?)"),
+      Self::Kind => Regex::new(r"(\b[a-zA-Z]+\b)"),
       Self::Line => Regex::new(r"(\d+)"),
       Self::Message => Regex::new(r"([^\n]+)"),
       Self::Whitespace => Regex::new(r"(\s+)"),
@@ -142,6 +144,11 @@ mod tests {
   }
 
   #[test]
+  fn test_filename_mismatch() {
+    assert!(!token_matches(Token::File, "\0"))
+  }
+
+  #[test]
   fn test_line_number_pattern_match() {
     assert!(token_matches(Token::Line, r"42"))
   }
@@ -149,6 +156,16 @@ mod tests {
   #[test]
   fn test_column_number_pattern_match() {
     assert!(token_matches(Token::Column, r"42"))
+  }
+
+  #[test]
+  fn test_line_number_pattern_mismatch() {
+    assert!(!token_matches(Token::Line, r"foo"))
+  }
+
+  #[test]
+  fn test_column_number_pattern_mismatch() {
+    assert!(!token_matches(Token::Column, r"foo"))
   }
 
   #[test]
@@ -266,7 +283,7 @@ mod tests {
       .push(Token::Message);
     let actual = sut.pattern().unwrap().to_string();
     let expected =
-      r"(\[Linter\]: )([^\n]+)(\d+)(\d+)( )\b([a-zA-Z]+)\b( )(\s+)([^\n]*?)([^\n]+)";
+      r"(\[Linter\]: )([^\x00\n]+?)(\d+)(\d+)( )(\b[a-zA-Z]+\b)( )(\s+)([^\n]*?)([^\n]+)";
     assert_eq!(expected, actual)
   }
 
