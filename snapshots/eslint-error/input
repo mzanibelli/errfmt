@@ -1,0 +1,14 @@
+
+/cart/domain/crosssellOrderer.js
+  5:3  error  Parsing error: Unexpected token
+
+  3 | // products objects.
+  4 | export const orderCrosssells = products =>
+> 5 |   const byOccurrencesDesc = (a, b) => b.occurrences - a.occurrences;
+    |   ^
+  6 |   const productsMap = products.reduce((uniqueProducts, product) => {
+  7 |     const productWithCount = uniqueProducts.get(product.sku) || {
+  8 |       ...product,
+
+✖ 1 problem (1 error, 0 warnings)
+

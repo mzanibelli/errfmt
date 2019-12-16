@@ -36,3 +36,8 @@ fn test_rust_backquotes() {
 fn test_rust_error_with_code() {
   common::run_snapshot("rust-error-with-code");
 }
+
+#[test]
+fn test_eslint_error() {
+  common::run_snapshot("eslint-error");
+}
