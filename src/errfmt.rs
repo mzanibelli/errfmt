@@ -7,11 +7,11 @@ use regex::Regex;
 /// %k: error kind (warning or error)
 /// %m: error message
 /// %.: sequence of whitespace characters (including new lines)
-/// %*: wildcard (everything until new line or eof)
+/// %*: anything
 /// ...every other sequence will be treated as literal.
 
 /// Documentation of what works and has been tested so far...
-pub const ESLINT_ERRFMT: &str = r"%f%.%l:%c  %k  %m";
+pub const ESLINT_ERRFMT: &str = r"%.%f%.%l:%c  %k  %m";
 pub const GOLINT_ERRFMT: &str = r"%f:%l:%c: %m";
 pub const PASSTHROUGH_ERRFMT: &str = r"%f:%l:%c: %k: %m";
 pub const PHP_ERRFMT: &str = r"%k: %m in %f on line %l";

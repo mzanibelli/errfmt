@@ -19,18 +19,16 @@ pub enum Token {
 
 impl Token {
   /// Regexes that will be involved in extracting text data from the input
-  /// stream. POSIX allows any character except null bytes in filename,
-  /// but supporting new lines brings a whole class of problems I don't
-  /// want to deal with.
+  /// stream. POSIX allows any character except null bytes in filename.
   pub fn pattern(&self) -> Result<Regex, Error> {
     match &self {
       Self::Column => Regex::new(r"(\d+)"),
-      Self::File => Regex::new(r"([^\x00\n]+?)"),
+      Self::File => Regex::new(r"([^\x00]+?)"),
       Self::Kind => Regex::new(r"(\b[a-zA-Z]+\b)"),
       Self::Line => Regex::new(r"(\d+)"),
       Self::Message => Regex::new(r"([^\n]+)"),
       Self::Whitespace => Regex::new(r"(\s+)"),
-      Self::Wildcard => Regex::new(r"([^\n]*?)"),
+      Self::Wildcard => Regex::new(r"(.*?)"),
       Self::Literal(value) => Regex::new(&escape_metacharacters(value)),
     }
   }
@@ -283,7 +281,7 @@ mod tests {
       .push(Token::Message);
     let actual = sut.pattern().unwrap().to_string();
     let expected =
-      r"(\[Linter\]: )([^\x00\n]+?)(\d+)(\d+)( )(\b[a-zA-Z]+\b)( )(\s+)([^\n]*?)([^\n]+)";
+      r"(\[Linter\]: )([^\x00]+?)(\d+)(\d+)( )(\b[a-zA-Z]+\b)( )(\s+)(.*?)([^\n]+)";
     assert_eq!(expected, actual)
   }
 
