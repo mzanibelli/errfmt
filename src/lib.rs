@@ -14,6 +14,11 @@ use entry::Kind;
 use token::Shape;
 use token::Token;
 
+/// Documentation of what works and has been tested so far...
+pub const PHP_ERRFMT: &str = r"%k: %m in %f on line %l";
+pub const RUST_ERRFMT: &str = r"%k%*: %m%.--> %f:%l:%c";
+pub const ESLINT_ERRFMT: &str = r"%f%.%l:%c  %k  %m";
+
 /// Entrypoint of the program: configure the errorformat string and
 /// de-facto filename then filter input to re-shape it into the expected
 /// format.
@@ -104,9 +109,6 @@ impl Parser {
 #[cfg(test)]
 mod tests {
   use super::*;
-
-  const PHP_ERRFMT: &str = r"%k: %m in %f on line %l";
-  const RUST_ERRFMT: &str = r"%k%*: %m%.--> %f:%l:%c";
 
   #[test]
   fn test_parser_from_empty_errfmt() {

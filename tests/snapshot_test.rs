@@ -41,3 +41,8 @@ fn test_rust_error_with_code() {
 fn test_eslint_error() {
   common::run_snapshot("eslint-error");
 }
+
+#[test]
+fn test_eslint_warning() {
+  common::run_snapshot("eslint-warning");
+}
