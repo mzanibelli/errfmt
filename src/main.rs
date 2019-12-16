@@ -17,10 +17,6 @@ fn main() {
 }
 
 fn parse_args() -> (String, String) {
-  /// This errorformat configuration expects the linter to already conform
-  /// to Kakoune's format.
-  const PASSTHROUGH: &'static str = "%f:%l:%c: %k: %m";
-
   let args = App::new("errfmt")
     .about("Error messages formatter for kak(1)'s lint.kak script")
     .arg(
@@ -40,7 +36,10 @@ fn parse_args() -> (String, String) {
     .get_matches();
 
   (
-    args.value_of("errfmt").unwrap_or(PASSTHROUGH).to_string(),
+    args
+      .value_of("errfmt")
+      .unwrap_or(errfmt::PASSTHROUGH_ERRFMT)
+      .to_string(),
     args.value_of("file").unwrap_or("").to_string(),
   )
 }

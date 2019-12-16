@@ -15,6 +15,7 @@ use token::Shape;
 use token::Token;
 
 /// Documentation of what works and has been tested so far...
+pub const PASSTHROUGH_ERRFMT: &str = r"%f:%l:%c: %k: %m";
 pub const PHP_ERRFMT: &str = r"%k: %m in %f on line %l";
 pub const RUST_ERRFMT: &str = r"%k%*: %m%.--> %f:%l:%c";
 pub const ESLINT_ERRFMT: &str = r"%f%.%l:%c  %k  %m";

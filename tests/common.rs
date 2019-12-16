@@ -1,10 +1,10 @@
 use std::fs;
 
-pub fn run_snapshot(name: &str) -> () {
-  check_snapshot(read_snapshot(name));
+pub fn run_snapshot(name: &str, errfmt: &str) -> () {
+  check_snapshot(read_snapshot(name), errfmt.to_string());
 }
 
-fn check_snapshot((input, errfmt, expected): (String, String, String)) -> () {
+fn check_snapshot((input, expected): (String, String), errfmt: String) -> () {
   assert_eq!(
     expected,
     errfmt::run(input, errfmt, String::new())
@@ -13,10 +13,9 @@ fn check_snapshot((input, errfmt, expected): (String, String, String)) -> () {
   );
 }
 
-fn read_snapshot(name: &str) -> (String, String, String) {
+fn read_snapshot(name: &str) -> (String, String) {
   (
     read_partial_snapshot(name, "input"),
-    read_partial_snapshot(name, "errfmt"),
     read_partial_snapshot(name, "expected"),
   )
 }
