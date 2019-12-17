@@ -1,6 +1,7 @@
+#[macro_use]
 extern crate clap;
-use clap::{App, Arg};
 
+use clap::App;
 use std::io;
 use std::io::Read;
 
@@ -17,24 +18,8 @@ fn main() {
 }
 
 fn parse_args() -> (String, String) {
-  let args = App::new("errfmt")
-    .about("Error messages formatter for kak(1)'s lint.kak script")
-    .arg(
-      Arg::with_name("errfmt")
-        .short("e")
-        .long("errfmt")
-        .value_name("ERRFMT")
-        .help("Vim-like errorformat string"),
-    )
-    .arg(
-      Arg::with_name("file")
-        .short("f")
-        .long("file")
-        .value_name("FILE")
-        .help("The name that will replace every filepaths in the output"),
-    )
-    .get_matches();
-
+  let config = load_yaml!("../cli.yml");
+  let args = App::from_yaml(config).get_matches();
   (
     args
       .value_of("errfmt")

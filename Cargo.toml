@@ -4,9 +4,7 @@ version = "1.0.0"
 authors = ["mzanibelli <mzanibelli@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 regex = ""
 lazy_static = ""
-clap = ""
+clap = { version = "", features = ["yaml"] }

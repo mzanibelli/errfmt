@@ -1,0 +1,15 @@
+name: errfmt
+about: Error messages formatter for kak(1)'s lint.kak script
+args:
+  - errfmt:
+      short: e
+      long: errfmt
+      value_name: ERRFMT
+      help: Vim-like errorformat string
+      takes_value: true
+  - file:
+      short: f
+      long: file
+      value_name: FILENAME
+      help: Static filename that will replace every filepath in the output
+      takes_value: true
