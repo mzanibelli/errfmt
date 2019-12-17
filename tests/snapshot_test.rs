@@ -18,23 +18,23 @@ fn test_php_warning() {
 }
 
 #[test]
-fn test_rust_padding() {
-  common::run_snapshot("rust-padding", errfmt::RUSTFMT_ERRFMT);
+fn test_rustfmt_padding() {
+  common::run_snapshot("rustfmt-padding", errfmt::RUSTFMT_ERRFMT);
 }
 
 #[test]
-fn test_rust_no_padding() {
-  common::run_snapshot("rust-no-padding", errfmt::RUSTFMT_ERRFMT);
+fn test_rustfmt_no_padding() {
+  common::run_snapshot("rustfmt-no-padding", errfmt::RUSTFMT_ERRFMT);
 }
 
 #[test]
-fn test_rust_backquotes() {
-  common::run_snapshot("rust-backquotes", errfmt::RUSTFMT_ERRFMT);
+fn test_rustfmt_backquotes() {
+  common::run_snapshot("rustfmt-backquotes", errfmt::RUSTFMT_ERRFMT);
 }
 
 #[test]
-fn test_rust_error_with_code() {
-  common::run_snapshot("rust-error-with-code", errfmt::RUSTFMT_ERRFMT);
+fn test_rustfmt_error_with_code() {
+  common::run_snapshot("rustfmt-error-with-code", errfmt::RUSTFMT_ERRFMT);
 }
 
 #[test]
