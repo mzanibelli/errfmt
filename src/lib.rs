@@ -186,74 +186,69 @@ mod tests {
 
   #[test]
   fn test_single_line_mode() {
-    let sut = Parser::new(String::from(PHP_ERRFMT), String::new());
-    let entries = sut.parse(String::from("PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 4")).unwrap();
+    let input = String::from("/tmp/myfile: error on line 7: invalid syntax\n");
+    let sut = Parser::new(String::from("%f: %k on line %l: %m"), String::new());
+    let entries = sut.parse(input).unwrap();
     assert_eq!(
-      "/tmp/test.php:4:1: error:  syntax error, unexpected end of file, expecting ',' or ';'",
+      "/tmp/myfile:7:1: error: invalid syntax",
       &entries[0].to_string()
     )
   }
 
   #[test]
   fn test_multiple_entries_with_single_line_mode() {
-    let sut = Parser::new(String::from(PHP_ERRFMT), String::new());
-    let entries = sut.parse(String::from(r"PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 1
-PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 2")).unwrap();
+    let input = vec![
+      String::from("/tmp/myfile: error on line 7: invalid syntax"),
+      String::from("\n"),
+      String::from("/tmp/anotherfile: error on line 7: invalid syntax"),
+      String::from("\n"),
+    ]
+    .join("");
+    let sut = Parser::new(String::from("%f: %k on line %l: %m%."), String::new());
+    let entries = sut.parse(input).unwrap();
     assert_eq!(
-      "/tmp/test.php:2:1: error:  syntax error, unexpected end of file, expecting ',' or ';'",
+      "/tmp/anotherfile:7:1: error: invalid syntax",
       &entries[1].to_string()
     )
   }
 
   #[test]
   fn test_multi_line_mode() {
-    let sut = Parser::new(String::from(RUSTFMT_ERRFMT), String::new());
-    let entries = sut
-      .parse(String::from(
-        r"error: unexpected close delimiter: `}`
-  --> /tmp/test.rs:85:1
-   |
-85 | }
-   | ^ unexpected close delimiter",
-      ))
-      .unwrap();
-    assert_eq!(
-      "/tmp/test.rs:85:1: error: unexpected close delimiter: `}`",
-      &entries[0].to_string()
-    )
+    let input = vec![
+      String::from("/tmp/myfile"),
+      String::from("\n"),
+      String::from("13:37"),
+      String::from("\n"),
+    ]
+    .join("");
+    let sut = Parser::new(String::from("%f%.%l:%c%."), String::new());
+    let entries = sut.parse(input).unwrap();
+    assert_eq!("/tmp/myfile:13:37: error: ", &entries[0].to_string())
   }
 
   #[test]
   fn test_multiples_entries_with_multi_line_mode() {
-    let sut = Parser::new(String::from(RUSTFMT_ERRFMT), String::new());
-    let entries = sut
-      .parse(String::from(
-        r"error: unexpected close delimiter: `}`
-  --> /tmp/test.rs:1:1
-   |
-85 | }
-   | ^ unexpected close delimiter
-error: unexpected close delimiter: `}`
-  --> /tmp/test.rs:2:1
-   |
-85 | }
-   | ^ unexpected close delimiter",
-      ))
-      .unwrap();
-    assert_eq!(
-      "/tmp/test.rs:2:1: error: unexpected close delimiter: `}`",
-      &entries[1].to_string()
-    )
+    let input = vec![
+      String::from("/tmp/myfile"),
+      String::from("\n"),
+      String::from("13:37"),
+      String::from("\n"),
+      String::from("/tmp/anotherfile"),
+      String::from("\n"),
+      String::from("13:37"),
+      String::from("\n"),
+    ]
+    .join("");
+    let sut = Parser::new(String::from("%f%.%l:%c%."), String::new());
+    let entries = sut.parse(input).unwrap();
+    assert_eq!("/tmp/anotherfile:13:37: error: ", &entries[1].to_string())
   }
 
   #[test]
   fn test_filename_must_override_extracted_value() {
-    let sut = Parser::new(String::from(PHP_ERRFMT), String::from("/etc/shadow"));
-    let entries = sut.parse(String::from("PHP Parse error:  syntax error, unexpected end of file, expecting ',' or ';' in /tmp/test.php on line 4")).unwrap();
-    assert_eq!(
-      "/etc/shadow:4:1: error:  syntax error, unexpected end of file, expecting ',' or ';'",
-      &entries[0].to_string()
-    )
+    let sut = Parser::new(String::from("%f"), String::from("/etc/shadow"));
+    let entries = sut.parse(String::from("/tmp/myfile")).unwrap();
+    assert_eq!("/etc/shadow:1:1: error: ", &entries[0].to_string())
   }
 
   #[test]
