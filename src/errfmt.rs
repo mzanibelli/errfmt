@@ -1,16 +1,5 @@
 use regex::Regex;
 
-/// Supported placeholders:
-/// %f: filename
-/// %l: line number
-/// %c: column number
-/// %k: error kind (warning or error)
-/// %m: error message
-/// %.: sequence of whitespace characters (including new lines)
-/// %*: anything
-/// ...every other sequence will be treated as literal.
-
-/// Documentation of what works and has been tested so far...
 pub const ESLINT_ERRFMT: &str = r"%.%f%.%l:%c  %k  %m";
 pub const GOLINT_ERRFMT: &str = r"%f:%l:%c: %m";
 pub const PASSTHROUGH_ERRFMT: &str = r"%f:%l:%c: %k: %m";

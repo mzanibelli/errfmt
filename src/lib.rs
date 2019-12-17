@@ -1,3 +1,37 @@
+//! # Crate `errfmt`
+//!
+//! ## Motivation
+//!
+//! Most editors support navigating a list of errors often resulting from
+//! a failed compilation (or syntax check, or linting tool...). Every
+//! editor expects a different list format and this program aims
+//! to re-shape any error message and make it compatible with
+//! [Kakoune](https://github.com/mawww/kakoune)'s `lint.kak` standard
+//! rc script.
+//!
+//! ## Usage
+//!
+//! `errfmt(1)` works by parsing error messages that match a pre-defined
+//! format. This format is specified with the `--errfmt` flag. It
+//! must be a string composed with placeholders where actual data is
+//! expected. Different helper placeholders can be used to skip parts
+//! of the messages that are not useful.
+//!
+//! ### CLI examples
+//!
+//! - Format error messages from PHP syntax checking tool: `php -l myfile.php | errfmt -e '%k: %m in %f on line %l'`
+//! - Make sure the file path is correct when input comes from STDIN: `cat myfile.php | php -l | errfmt -e '%k: %m in %f on line %l' -f myfile.php`
+//!
+//! ### Supported placeholders:
+//! - `%f`: filename
+//! - `%l`: line number
+//! - `%c`: column number
+//! - `%k`: error kind (warning or error)
+//! - `%m`: error message
+//! - `%.`: sequence of whitespace characters (including new lines)
+//! - `%*`: anything
+//! - ...every other sequence will be treated as literal.
+
 #[macro_use]
 extern crate lazy_static;
 
@@ -24,6 +58,28 @@ pub use crate::errfmt::SHELLCHECK_ERRFMT;
 /// Entrypoint of the program: configure the errorformat string and
 /// de-facto filename then filter input to re-shape it into the expected
 /// format.
+///
+/// # Example: simple error message
+///
+/// ```
+/// let messages = errfmt::run(
+/// 	String::from("/tmp/myfile error on line 3 column 1: syntax error"),
+/// 	String::from("%f %k on line %l column %c: %m"),
+/// 	String::new() // this must be empty when not used
+/// );
+/// assert_eq!(String::from("/tmp/myfile:3:1: error: syntax error"), messages.unwrap()[0]);
+/// ```
+///
+/// # Example: replace filenames with static value
+///
+/// ```
+/// let messages = errfmt::run(
+/// 	String::from("/tmp/myfile error on line 3 column 1: syntax error"),
+/// 	String::from("%f %k on line %l column %c: %m"),
+/// 	String::from("/tmp/anotherfile") // this will replace any filename in resulting output
+/// );
+/// assert_eq!(String::from("/tmp/anotherfile:3:1: error: syntax error"), messages.unwrap()[0]);
+/// ```
 pub fn run(input: String, errfmt: String, file: String) -> Result<Vec<String>, String> {
   Ok(
     Parser::new(errfmt, file)
