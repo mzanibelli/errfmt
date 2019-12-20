@@ -21,15 +21,16 @@ impl Token {
   /// Regexes that will be involved in extracting text data from the input
   /// stream. POSIX allows any character except null bytes in filename.
   pub fn pattern(&self) -> Result<Regex, Error> {
+    let mkregex = |s| Regex::new(&format!("({})", s));
     match &self {
-      Self::Column => Regex::new(r"(\d+)"),
-      Self::File => Regex::new(r"([^\x00]+?)"),
-      Self::Kind => Regex::new(r"(\b[a-zA-Z]+\b)"),
-      Self::Line => Regex::new(r"(\d+)"),
-      Self::Message => Regex::new(r"([^\n]+)"),
-      Self::Whitespace => Regex::new(r"(\s+)"),
-      Self::Wildcard => Regex::new(r"(.*?)"),
-      Self::Literal(value) => Regex::new(&escape_metacharacters(value)),
+      Self::Column => mkregex(r"\d+"),
+      Self::File => mkregex(r"[^\x00]+?"),
+      Self::Kind => mkregex(r"\b[a-zA-Z]+\b"),
+      Self::Line => mkregex(r"\d+"),
+      Self::Message => mkregex(r"[^\n]+"),
+      Self::Whitespace => mkregex(r"\s+"),
+      Self::Wildcard => mkregex(r".*?"),
+      Self::Literal(value) => mkregex(&regex::escape(&value)),
     }
   }
 
@@ -57,15 +58,6 @@ fn dedupe_percent_signs(value: &str) -> String {
   } else {
     String::from(value)
   }
-}
-
-/// Make any given literal string interpreted as non-special character
-/// by the regex. Wrap the result in a capture group.
-fn escape_metacharacters(value: &str) -> String {
-  lazy_static! {
-    static ref RE: Regex = Regex::new(r"([\\.+*?()|\[\]{}^$])").unwrap();
-  }
-  format!("({})", RE.replace_all(value, r"\$1"))
 }
 
 /// Once the errorformat string is read and understood, this structure
