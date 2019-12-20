@@ -38,7 +38,7 @@ impl Shape {
   /// from user input, it is necessary to limit its size.
   pub fn pattern(&self) -> Result<Regex, Error> {
     self.build().and_then(|patterns| {
-      RegexBuilder::new(&self.serialize(patterns).join(""))
+      RegexBuilder::new(&Self::serialize(patterns).join(""))
         .size_limit(Self::REGEX_MAX_SIZE)
         .multi_line(true)
         .build()
@@ -51,7 +51,7 @@ impl Shape {
   }
 
   /// Prepare the patterns for display.
-  fn serialize(&self, patterns: Vec<Regex>) -> Vec<String> {
+  fn serialize(patterns: Vec<Regex>) -> Vec<String> {
     patterns.into_iter().map(|p| p.to_string()).collect()
   }
 }
