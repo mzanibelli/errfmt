@@ -42,10 +42,11 @@ use regex::Match;
 mod entry;
 mod errfmt;
 mod token;
+mod shape;
 
 use entry::Entry;
 use entry::Kind;
-use token::Shape;
+use shape::Shape;
 use token::Token;
 
 pub use crate::errfmt::ESLINT_ERRFMT;
