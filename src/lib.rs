@@ -38,11 +38,13 @@ extern crate lazy_static;
 use regex::Captures;
 use regex::Error;
 use regex::Match;
+use regex::Regex;
+use std::convert::TryInto;
 
 mod entry;
 mod errfmt;
-mod token;
 mod shape;
+mod token;
 
 use entry::Entry;
 use entry::Kind;
@@ -107,7 +109,8 @@ impl Parser {
     Parser {
       shape: errfmt::tokenize(errfmt)
         .into_iter()
-        .fold(Shape::new(), |acc, t| acc.push(Token::from(&t))),
+        .map(Token::from)
+        .fold(Shape::new(), |acc, t| acc.push(t)),
       file,
     }
   }
@@ -115,14 +118,11 @@ impl Parser {
   /// Build the resulting pattern from the shape and gather the list of
   /// entries matching an error message.
   fn parse(&self, input: String) -> Result<Vec<Entry>, Error> {
-    Ok(
-      self
-        .shape
-        .pattern()?
-        .captures_iter(&input)
+    self.shape.clone().try_into().map(|r: Regex| {
+      r.captures_iter(&input)
         .map(|matches| self.build_entry(&matches))
-        .collect(),
-    )
+        .collect()
+    })
   }
 
   /// Add a new location to the result set by reading its data from

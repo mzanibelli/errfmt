@@ -1,5 +1,7 @@
 use regex::Error;
 use regex::Regex;
+use std::convert::From;
+use std::convert::TryInto;
 
 /// A Token is a section of input data. It can be referred to using
 /// pre-defined placeholders that compose an errorformat string.
@@ -15,26 +17,10 @@ pub enum Token {
   Literal(String),
 }
 
-impl Token {
-  /// Regexes that will be involved in extracting text data from the input
-  /// stream. POSIX allows any character except null bytes in filename.
-  pub fn pattern(&self) -> Result<Regex, Error> {
-    let mkregex = |s| Regex::new(&format!("({})", s));
-    match &self {
-      Self::Column => mkregex(r"\d+"),
-      Self::File => mkregex(r"[^\x00]+?"),
-      Self::Kind => mkregex(r"\b[a-zA-Z]+\b"),
-      Self::Line => mkregex(r"\d+"),
-      Self::Message => mkregex(r"[^\n]+"),
-      Self::Whitespace => mkregex(r"\s+"),
-      Self::Wildcard => mkregex(r".*?"),
-      Self::Literal(value) => mkregex(&regex::escape(&value)),
-    }
-  }
-
-  /// Human-readable way of representing an expected sequence of
-  /// tokens. Acts as a DSL for defining the errorformat string.
-  pub fn from(value: &str) -> Self {
+/// Human-readable way of representing an expected sequence of
+/// tokens. Acts as a DSL for defining the errorformat string.
+impl From<&str> for Token {
+  fn from(value: &str) -> Self {
     match value {
       "%c" => Self::Column,
       "%f" => Self::File,
@@ -46,6 +32,36 @@ impl Token {
       value => Self::Literal(dedupe_percent_signs(value)),
     }
   }
+}
+
+/// For convenience.
+impl From<String> for Token {
+  fn from(value: String) -> Self {
+    Self::from(value.as_ref())
+  }
+}
+
+/// Regexes that will be involved in extracting text data from the input
+/// stream. POSIX allows any character except null bytes in filename.
+impl TryInto<Regex> for Token {
+  type Error = Error;
+  fn try_into(self) -> Result<Regex, Error> {
+    match &self {
+      Self::Column => mkregex(r"\d+"),
+      Self::File => mkregex(r"[^\x00]+?"),
+      Self::Kind => mkregex(r"\b[a-zA-Z]+\b"),
+      Self::Line => mkregex(r"\d+"),
+      Self::Message => mkregex(r"[^\n]+"),
+      Self::Whitespace => mkregex(r"\s+"),
+      Self::Wildcard => mkregex(r".*?"),
+      Self::Literal(value) => mkregex(&regex::escape(&value)),
+    }
+  }
+}
+
+/// Wrap given pattern in a capture group.
+fn mkregex(s: &str) -> Result<Regex, Error> {
+  Regex::new(&format!("({})", s))
 }
 
 /// The percent sign is used as a placeholder prefix. As a result,
@@ -63,7 +79,8 @@ mod tests {
   use super::*;
 
   fn token_matches(token: Token, value: &str) -> bool {
-    token.pattern().unwrap().is_match(value)
+    let r: Regex = token.try_into().unwrap();
+    r.is_match(value)
   }
 
   #[test]

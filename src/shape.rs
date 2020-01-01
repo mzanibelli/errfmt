@@ -1,13 +1,14 @@
 use regex::Error;
 use regex::Regex;
 use regex::RegexBuilder;
+use std::convert::TryInto;
 use std::ops::Deref;
 
 use crate::Token;
 
 /// Once the errorformat string is read and understood, this structure
 /// represents a sequence of tokens: the shape of an error message.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Shape(pub Vec<Token>);
 
 /// Make sure we can access iterator methods quickly and concisely.
@@ -15,6 +16,41 @@ impl Deref for Shape {
   type Target = Vec<Token>;
   fn deref(&self) -> &Vec<Token> {
     &self.0
+  }
+}
+
+/// Final pattern is made multi-line. The pattern ultimately comes
+/// from user input, it is necessary to limit its size.
+impl TryInto<Regex> for Shape {
+  type Error = Error;
+  fn try_into(self) -> Result<Regex, Error> {
+    TryInto::<String>::try_into(self).and_then(|p| {
+      RegexBuilder::new(&p)
+        .size_limit(Self::REGEX_MAX_SIZE)
+        .multi_line(true)
+        .build()
+    })
+  }
+}
+
+/// Convert to an array of regexes before concatenating to string.
+impl TryInto<String> for Shape {
+  type Error = Error;
+  fn try_into(self) -> Result<String, Error> {
+    TryInto::<Vec<Regex>>::try_into(self).map(|p| {
+      p.into_iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>()
+        .join("")
+    })
+  }
+}
+
+/// Iteratively apply faillible conversion.
+impl TryInto<Vec<Regex>> for Shape {
+  type Error = Error;
+  fn try_into(self) -> Result<Vec<Regex>, Error> {
+    self.0.into_iter().map(TryInto::<Regex>::try_into).collect()
   }
 }
 
@@ -32,27 +68,6 @@ impl Shape {
   /// Add a token to the parser shape.
   pub fn push(self, token: Token) -> Self {
     Self([self.to_vec(), vec![token]].concat())
-  }
-
-  /// Final pattern is made multi-line. The pattern ultimately comes
-  /// from user input, it is necessary to limit its size.
-  pub fn pattern(&self) -> Result<Regex, Error> {
-    self.build().and_then(|patterns| {
-      RegexBuilder::new(&Self::serialize(patterns).join(""))
-        .size_limit(Self::REGEX_MAX_SIZE)
-        .multi_line(true)
-        .build()
-    })
-  }
-
-  /// Try to compile the shape's patterns.
-  fn build(&self) -> Result<Vec<Regex>, Error> {
-    self.iter().map(|t| t.pattern()).collect()
-  }
-
-  /// Prepare the patterns for display.
-  fn serialize(patterns: Vec<Regex>) -> Vec<String> {
-    patterns.into_iter().map(|p| p.to_string()).collect()
   }
 }
 
@@ -73,8 +88,8 @@ mod tests {
       .push(Token::Whitespace)
       .push(Token::Wildcard)
       .push(Token::Message);
-    let actual = sut.pattern().unwrap().to_string();
+    let actual: Regex = sut.try_into().unwrap();
     let expected = r"(\[Linter\]: )([^\x00]+?)(\d+)(\d+)( )(\b[a-zA-Z]+\b)( )(\s+)(.*?)([^\n]+)";
-    assert_eq!(expected, actual)
+    assert_eq!(expected, actual.to_string())
   }
 }
