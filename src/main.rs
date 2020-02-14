@@ -6,8 +6,7 @@ use std::io;
 use std::io::Read;
 
 fn main() {
-  let (errfmt, file) = parse_args();
-  invoke_errfmt(errfmt, file)
+  invoke_errfmt(parse_args())
     .map(|output| output.join("\n"))
     .map(|output| {
       if !String::is_empty(&output) {
@@ -29,7 +28,7 @@ fn parse_args() -> (String, String) {
   )
 }
 
-fn invoke_errfmt(errfmt: String, file: String) -> Result<Vec<String>, String> {
+fn invoke_errfmt((errfmt, file): (String, String)) -> Result<Vec<String>, String> {
   stdin_lines().and_then(move |lines| errfmt::run(lines, errfmt, file))
 }
 
