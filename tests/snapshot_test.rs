@@ -61,4 +61,3 @@ fn test_shellcheck_error() {
 fn test_shellcheck_note() {
   common::run_snapshot("shellcheck-note", errfmt::SHELLCHECK_ERRFMT);
 }
-
