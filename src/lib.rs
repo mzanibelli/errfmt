@@ -66,9 +66,9 @@ pub use crate::errfmt::SHELLCHECK_ERRFMT;
 ///
 /// ```
 /// let messages = errfmt::run(
-/// 	String::from("/tmp/myfile error on line 3 column 1: syntax error"),
-/// 	String::from("%f %k on line %l column %c: %m"),
-/// 	String::new() // this must be empty when not used
+///   String::from("/tmp/myfile error on line 3 column 1: syntax error"),
+///   String::from("%f %k on line %l column %c: %m"),
+///   String::new() // this must be empty when not used
 /// );
 /// assert_eq!(String::from("/tmp/myfile:3:1: error: syntax error"), messages.unwrap()[0]);
 /// ```
@@ -77,9 +77,9 @@ pub use crate::errfmt::SHELLCHECK_ERRFMT;
 ///
 /// ```
 /// let messages = errfmt::run(
-/// 	String::from("/tmp/myfile error on line 3 column 1: syntax error"),
-/// 	String::from("%f %k on line %l column %c: %m"),
-/// 	String::from("/tmp/anotherfile") // this will replace any filename in resulting output
+///   String::from("/tmp/myfile error on line 3 column 1: syntax error"),
+///   String::from("%f %k on line %l column %c: %m"),
+///   String::from("/tmp/anotherfile") // this will replace any filename in resulting output
 /// );
 /// assert_eq!(String::from("/tmp/anotherfile:3:1: error: syntax error"), messages.unwrap()[0]);
 /// ```
