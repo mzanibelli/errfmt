@@ -1,28 +1,32 @@
 use regex::Error;
 use regex::Regex;
 use regex::RegexBuilder;
+use std::clone::Clone;
 use std::convert::TryInto;
 use std::ops::Deref;
-
-use crate::Token;
 
 /// Once the errorformat string is read and understood, this structure
 /// represents a sequence of tokens: the shape of an error message.
 #[derive(Debug, Clone)]
-pub struct Shape(pub Vec<Token>);
+pub struct Shape<T>(pub Vec<T>);
 
 /// Make sure we can access iterator methods quickly and concisely.
-impl Deref for Shape {
-  type Target = Vec<Token>;
-  fn deref(&self) -> &Vec<Token> {
+impl<T> Deref for Shape<T> {
+  type Target = Vec<T>;
+
+  fn deref(&self) -> &Vec<T> {
     &self.0
   }
 }
 
 /// Final pattern is made multi-line. The pattern ultimately comes
 /// from user input, it is necessary to limit its size.
-impl TryInto<Regex> for Shape {
+impl<T> TryInto<Regex> for Shape<T>
+where
+  T: Clone + TryInto<Regex, Error = Error>,
+{
   type Error = Error;
+
   fn try_into(self) -> Result<Regex, Error> {
     TryInto::<String>::try_into(self).and_then(|p| {
       RegexBuilder::new(&p)
@@ -34,8 +38,12 @@ impl TryInto<Regex> for Shape {
 }
 
 /// Convert to an array of regexes before concatenating to string.
-impl TryInto<String> for Shape {
+impl<T> TryInto<String> for Shape<T>
+where
+  T: Clone + TryInto<Regex, Error = Error>,
+{
   type Error = Error;
+
   fn try_into(self) -> Result<String, Error> {
     TryInto::<Vec<Regex>>::try_into(self).map(|p| {
       p.into_iter()
@@ -47,14 +55,21 @@ impl TryInto<String> for Shape {
 }
 
 /// Iteratively apply faillible conversion.
-impl TryInto<Vec<Regex>> for Shape {
+impl<T> TryInto<Vec<Regex>> for Shape<T>
+where
+  T: Clone + TryInto<Regex, Error = Error>,
+{
   type Error = Error;
+
   fn try_into(self) -> Result<Vec<Regex>, Error> {
     self.0.into_iter().map(TryInto::<Regex>::try_into).collect()
   }
 }
 
-impl Shape {
+impl<T> Shape<T>
+where
+  T: Clone + TryInto<Regex, Error = Error>,
+{
   /// Keep in mind this is an approximate size. Also, from my
   /// understanding, this represents the amount of memory needed
   /// by a regex *once compiled*.
@@ -66,7 +81,7 @@ impl Shape {
   }
 
   /// Add a token to the parser shape.
-  pub fn push(self, token: Token) -> Self {
+  pub fn push(self, token: T) -> Self {
     Self([self.to_vec(), vec![token]].concat())
   }
 }
@@ -74,6 +89,7 @@ impl Shape {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::Token;
 
   #[test]
   fn test_full_featured_regex_as_string() {

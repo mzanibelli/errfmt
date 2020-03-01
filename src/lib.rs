@@ -98,7 +98,7 @@ pub fn run(input: String, errfmt: String, file: String) -> Result<Vec<String>, S
 /// extracted error messages.
 #[derive(Debug)]
 struct Parser {
-  shape: Shape,
+  shape: Shape<Token>,
   file: String,
 }
 
